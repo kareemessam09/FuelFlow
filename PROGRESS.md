@@ -73,7 +73,7 @@
 ## Commit History
 | Commit | Description | Date |
 |--------|-------------|------|
-| (pending) | P0-2 + P0-3 + P1-4: GI normalization, snapshot caching, weighted GI | 2026-03-25 |
+| fd6e328 | P0-2 + P0-3 + P1-4: GI normalization, snapshot caching, weighted GI | 2026-03-25 |
 
 ---
 
