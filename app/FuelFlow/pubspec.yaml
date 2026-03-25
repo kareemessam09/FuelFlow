@@ -37,6 +37,7 @@ dependencies:
   # Camera & Image
   image_picker: ^1.1.2
   camera: ^0.11.0+2
+  permission_handler: ^11.3.1
 
   # Notifications
   flutter_local_notifications: ^18.0.1
@@ -46,6 +47,8 @@ dependencies:
   uuid: ^4.5.1
   get_it: ^8.0.2
   injectable: ^2.5.0
+  firebase_core: ^4.6.0
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:
@@ -53,7 +56,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.4.13
   json_serializable: ^6.8.0
-  retrofit_generator: ^9.1.5
+  # retrofit_generator: ^8.2.1  # Temporarily disabled due to SDK compatibility
   injectable_generator: ^2.6.2
   hive_generator: ^2.0.1
 
@@ -64,16 +67,16 @@ flutter:
     - assets/images/
     - assets/icons/
 
-  fonts:
-    - family: SpaceGrotesk
-      fonts:
-        - asset: assets/fonts/SpaceGrotesk-Regular.ttf
-        - asset: assets/fonts/SpaceGrotesk-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/SpaceGrotesk-Bold.ttf
-          weight: 700
-    - family: RobotoMono
-      fonts:
-        - asset: assets/fonts/RobotoMono-Regular.ttf
-        - asset: assets/fonts/RobotoMono-Bold.ttf
-          weight: 700
+#  fonts:
+#    - family: SpaceGrotesk
+#      fonts:
+#        - asset: assets/fonts/SpaceGrotesk-Regular.ttf
+#        - asset: assets/fonts/SpaceGrotesk-Medium.ttf
+#          weight: 500
+#        - asset: assets/fonts/SpaceGrotesk-Bold.ttf
+#          weight: 700
+#    - family: RobotoMono
+#      fonts:
+#        - asset: assets/fonts/RobotoMono-Regular.ttf
+#        - asset: assets/fonts/RobotoMono-Bold.ttf
+#          weight: 700

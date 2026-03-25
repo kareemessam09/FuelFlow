@@ -19,6 +19,12 @@ class MealCaptureState extends Equatable {
   /// Whether camera permission is granted
   final bool hasCameraPermission;
 
+  /// Whether photos/gallery permission is granted
+  final bool hasPhotosPermission;
+
+  /// Whether permission was denied (user declined)
+  final bool permissionDenied;
+
   /// Whether the capture overlay is visible
   final bool isOverlayVisible;
 
@@ -28,6 +34,8 @@ class MealCaptureState extends Equatable {
     this.analysisResult,
     this.errorMessage,
     this.hasCameraPermission = false,
+    this.hasPhotosPermission = false,
+    this.permissionDenied = false,
     this.isOverlayVisible = false,
   });
 
@@ -45,12 +53,17 @@ class MealCaptureState extends Equatable {
   /// Check if we can confirm the meal
   bool get canConfirm => hasImage && hasAnalysis && status == MealCaptureStatus.analyzed;
 
+  /// Check if any permission is available for capture
+  bool get hasAnyPermission => hasCameraPermission || hasPhotosPermission;
+
   MealCaptureState copyWith({
     MealCaptureStatus? status,
     File? capturedImage,
     MealAnalysisResult? analysisResult,
     String? errorMessage,
     bool? hasCameraPermission,
+    bool? hasPhotosPermission,
+    bool? permissionDenied,
     bool? isOverlayVisible,
     bool clearImage = false,
     bool clearAnalysis = false,
@@ -62,6 +75,8 @@ class MealCaptureState extends Equatable {
       analysisResult: clearAnalysis ? null : (analysisResult ?? this.analysisResult),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       hasCameraPermission: hasCameraPermission ?? this.hasCameraPermission,
+      hasPhotosPermission: hasPhotosPermission ?? this.hasPhotosPermission,
+      permissionDenied: permissionDenied ?? this.permissionDenied,
       isOverlayVisible: isOverlayVisible ?? this.isOverlayVisible,
     );
   }
@@ -73,6 +88,8 @@ class MealCaptureState extends Equatable {
         analysisResult,
         errorMessage,
         hasCameraPermission,
+        hasPhotosPermission,
+        permissionDenied,
         isOverlayVisible,
       ];
 }
@@ -81,6 +98,9 @@ class MealCaptureState extends Equatable {
 enum MealCaptureStatus {
   /// Initial state
   initial,
+
+  /// Loading/checking permissions
+  loading,
 
   /// Camera is open and ready
   cameraReady,

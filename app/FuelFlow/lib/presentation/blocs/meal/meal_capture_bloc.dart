@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/entities/entities.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../../data/repositories/meal_repository.dart';
 import 'meal_capture_event.dart';
 import 'meal_capture_state.dart';
 
@@ -12,10 +13,11 @@ import 'meal_capture_state.dart';
 /// 3. Display analysis results
 /// 4. Confirm meal and dispatch to FuelBloc
 class MealCaptureBloc extends Bloc<MealCaptureEvent, MealCaptureState> {
-  // TODO: Inject repository for actual API calls
-  // final MealRepository _mealRepository;
+  final MealRepository _mealRepository;
 
-  MealCaptureBloc() : super(MealCaptureState.initial()) {
+  MealCaptureBloc({MealRepository? mealRepository})
+      : _mealRepository = mealRepository ?? MealRepositoryImpl(),
+        super(MealCaptureState.initial()) {
     on<MealCaptureInitialize>(_onInitialize);
     on<MealCaptureOpenCamera>(_onOpenCamera);
     on<MealCaptureTakePhoto>(_onTakePhoto);
@@ -32,11 +34,31 @@ class MealCaptureBloc extends Bloc<MealCaptureEvent, MealCaptureState> {
     MealCaptureInitialize event,
     Emitter<MealCaptureState> emit,
   ) async {
-    // TODO: Implement actual permission check
-    // For now, assume permission is granted
+    emit(state.copyWith(status: MealCaptureStatus.loading));
+    
+    // Check camera permission
+    final cameraStatus = await Permission.camera.status;
+    final photosStatus = await Permission.photos.status;
+    
+    bool hasCameraPermission = cameraStatus.isGranted;
+    bool hasPhotosPermission = photosStatus.isGranted || photosStatus.isLimited;
+    
+    // If not granted, request permissions
+    if (!hasCameraPermission) {
+      final result = await Permission.camera.request();
+      hasCameraPermission = result.isGranted;
+    }
+    
+    if (!hasPhotosPermission) {
+      final result = await Permission.photos.request();
+      hasPhotosPermission = result.isGranted || result.isLimited;
+    }
+    
     emit(state.copyWith(
-      hasCameraPermission: true,
+      hasCameraPermission: hasCameraPermission,
+      hasPhotosPermission: hasPhotosPermission,
       status: MealCaptureStatus.initial,
+      permissionDenied: !hasCameraPermission && !hasPhotosPermission,
     ));
   }
 
@@ -83,7 +105,7 @@ class MealCaptureBloc extends Bloc<MealCaptureEvent, MealCaptureState> {
     add(const MealCaptureAnalyze());
   }
 
-  /// Analyze the captured image using Gemini AI
+  /// Analyze the captured image using Gemini AI (POST /meals/snap)
   Future<void> _onAnalyze(
     MealCaptureAnalyze event,
     Emitter<MealCaptureState> emit,
@@ -99,24 +121,9 @@ class MealCaptureBloc extends Bloc<MealCaptureEvent, MealCaptureState> {
     emit(state.copyWith(status: MealCaptureStatus.analyzing));
 
     try {
-      // TODO: Implement actual API call to backend -> Gemini
-      // final result = await _mealRepository.analyzeImage(state.capturedImage!);
-
-      // Simulated response for development
-      await Future.delayed(const Duration(seconds: 2));
-      
-      final mockResult = MealAnalysisResult(
-        foodName: 'Mixed Salad with Grilled Chicken',
-        absorptionProfile: AbsorptionProfile.balanced,
-        glycemicIndex: 45,
-        estimatedSatietyMinutes: 180,
-        estimatedFullnessPercentage: 35,
-        nutritionSummary: 'High protein, moderate carbs, low GI',
-        detectedIngredients: ['Chicken', 'Lettuce', 'Tomatoes', 'Olive Oil'],
-      );
-
+      final result = await _mealRepository.analyzeImage(state.capturedImage!);
       emit(state.copyWith(
-        analysisResult: mockResult,
+        analysisResult: result,
         status: MealCaptureStatus.analyzed,
       ));
     } catch (e) {

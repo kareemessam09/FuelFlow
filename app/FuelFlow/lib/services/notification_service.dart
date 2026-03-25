@@ -1,5 +1,13 @@
+import 'dart:ui';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+
+/// Notification action types for routing
+enum NotificationAction {
+  openDashboard,
+  openMealCapture,
+  none,
+}
 
 /// NotificationService - Handles local notifications for FuelFlow
 /// 
@@ -13,11 +21,18 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
+  
+  /// Callback for handling notification taps (set by main.dart)
+  void Function(NotificationAction action)? onNotificationTap;
 
   /// Notification ID constants
   static const int _criticalAlertId = 1;
   static const int _refuelReminderId = 2;
   static const int _scheduledAlertId = 3;
+  
+  /// Payload constants for routing
+  static const String _payloadDashboard = 'dashboard';
+  static const String _payloadMealCapture = 'meal_capture';
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -101,10 +116,11 @@ class NotificationService {
     );
 
     await _notifications.show(
-      1, // Notification ID
+      _criticalAlertId,
       'Energy levels dropping!',
       'Current mode: $currentMode. Your energy will hit the red zone in $minutesToCrash minutes. Suggestion: Consume 15g of sustained carbs (e.g., Nuts or Protein Bar) now.',
       details,
+      payload: _payloadMealCapture, // Opens meal capture on tap
     );
   }
 
@@ -133,10 +149,11 @@ class NotificationService {
     );
 
     await _notifications.show(
-      2, // Notification ID
+      _refuelReminderId,
       'Time to refuel?',
       'It\'s been $minutesSinceLastMeal minutes since your last meal. Consider a snack to maintain energy levels.',
       details,
+      payload: _payloadMealCapture, // Opens meal capture on tap
     );
   }
 
@@ -186,6 +203,8 @@ class NotificationService {
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: null,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      payload: _payloadMealCapture, // Opens meal capture on tap
     );
   }
 
@@ -205,13 +224,18 @@ class NotificationService {
   }
 
   void _onNotificationTap(NotificationResponse response) {
-    // Handle notification tap - could navigate to specific screen
-    // This would be connected to the app's navigation
+    // Parse payload to determine navigation action
+    final payload = response.payload;
+    NotificationAction action = NotificationAction.openDashboard;
+    
+    if (payload == _payloadMealCapture) {
+      action = NotificationAction.openMealCapture;
+    } else if (payload == _payloadDashboard) {
+      action = NotificationAction.openDashboard;
+    }
+    
+    // Invoke callback if set
+    onNotificationTap?.call(action);
   }
 }
 
-/// Color class for notification (Android)
-class Color {
-  final int value;
-  const Color(this.value);
-}

@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../presentation/screens/auth/auth_screens.dart';
 import '../presentation/screens/dashboard/dashboard.dart';
+import '../presentation/screens/profile/profile_screen.dart';
+import '../presentation/screens/meal_capture/meal_capture_screen.dart';
+import '../presentation/screens/splash/splash_screen.dart';
+import '../services/auth_service.dart';
 
 /// Route names for navigation
 class AppRoutes {
   AppRoutes._();
 
+  static const String splash = '/splash';
   static const String dashboard = '/';
+  static const String login = '/login';
+  static const String register = '/register';
   static const String activity = '/activity';
   static const String mealCapture = '/meal-capture';
   static const String mealAnalysis = '/meal-analysis';
   static const String stats = '/stats';
+  static const String profile = '/profile';
   static const String settings = '/settings';
 }
 
@@ -27,9 +36,40 @@ class AppRouter {
   /// The main router instance
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.dashboard,
+    initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
+    // Auth guard — redirect to login if no token is stored
+    // Skip guard for splash screen
+    redirect: (context, state) async {
+      final isSplash = state.matchedLocation == AppRoutes.splash;
+      if (isSplash) return null; // Allow splash to handle its own navigation
+      
+      final isLoggedIn = AuthService().isAuthenticated;
+      final isOnAuth =
+          state.matchedLocation == AppRoutes.login ||
+          state.matchedLocation == AppRoutes.register;
+
+      if (!isLoggedIn && !isOnAuth) return AppRoutes.login;
+      if (isLoggedIn && isOnAuth) return AppRoutes.dashboard;
+      return null;
+    },
     routes: [
+      // Splash Screen - Entry point
+      GoRoute(
+        path: AppRoutes.splash,
+        name: 'splash',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const SplashScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+        ),
+      ),
+
       // Main Dashboard - The anchor screen
       GoRoute(
         path: AppRoutes.dashboard,
@@ -71,28 +111,45 @@ class AppRouter {
             ),
           ),
 
-          // Meal capture - Camera overlay
+          // Meal capture
           GoRoute(
             path: 'meal-capture',
             name: 'meal-capture',
             pageBuilder: (context, state) => CustomTransitionPage(
               key: state.pageKey,
-              opaque: false,
-              barrierDismissible: false,
-              barrierColor: Colors.black87,
-              child: const _MealCaptureRouteHandler(),
+              child: const MealCaptureScreen(),
               transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return ScaleTransition(
-                  scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutBack,
-                    ),
-                  ),
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  )),
+                  child: child,
+                );
+              },
+            ),
+          ),
+          
+          // Profile Screen
+          GoRoute(
+            path: 'profile',
+            name: 'profile',
+            pageBuilder: (context, state) => CustomTransitionPage(
+              key: state.pageKey,
+              child: const ProfileScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(-1, 0),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  )),
+                  child: child,
                 );
               },
             ),
@@ -143,6 +200,24 @@ class AppRouter {
           },
         ),
       ),
+
+      // Login screen
+      GoRoute(
+        path: AppRoutes.login,
+        name: 'login',
+        pageBuilder: (context, state) => const MaterialPage(
+          child: LoginScreen(),
+        ),
+      ),
+
+      // Register screen
+      GoRoute(
+        path: AppRoutes.register,
+        name: 'register',
+        pageBuilder: (context, state) => const MaterialPage(
+          child: RegisterScreen(),
+        ),
+      ),
     ],
 
     // Error handling
@@ -174,69 +249,7 @@ class _ActivityRouteHandler extends StatelessWidget {
   }
 }
 
-class _MealCaptureRouteHandler extends StatelessWidget {
-  const _MealCaptureRouteHandler();
-
-  @override
-  Widget build(BuildContext context) {
-    // Placeholder for meal capture screen
-    // Will be replaced with actual camera implementation
-    return GestureDetector(
-      onTap: () => context.pop(),
-      child: Container(
-        color: Colors.transparent,
-        child: Center(
-          child: Container(
-            margin: const EdgeInsets.all(32),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A24),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFF2A2A3C)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.camera_alt,
-                  size: 64,
-                  color: const Color(0xFF00F5FF),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Snap & Fuel',
-                  style: TextStyle(
-                    fontFamily: 'SpaceGrotesk',
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Camera integration coming soon',
-                  style: TextStyle(
-                    fontFamily: 'SpaceGrotesk',
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () => context.pop(),
-                  child: Text(
-                    'Tap to close',
-                    style: TextStyle(color: const Color(0xFF00F5FF)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+// Removed legacy MealCaptureRouteHandler
 
 class _StatsPlaceholder extends StatelessWidget {
   const _StatsPlaceholder();
