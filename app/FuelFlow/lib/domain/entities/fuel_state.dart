@@ -3,6 +3,10 @@ import 'activity.dart';
 
 /// Represents the current energy/fuel state of the user's "stomach balloon"
 /// This is the core entity that drives the app's visualization
+/// 
+/// IMPORTANT: currentGlycemicIndex is stored in normalized form (0.01-1.0)
+/// This matches the backend which divides GI by 100. Raw GI values (1-100)
+/// should be normalized before storing.
 class FuelState extends Equatable {
   /// Current volume percentage (0-100)
   final double currentVolume;
@@ -10,7 +14,8 @@ class FuelState extends Equatable {
   /// Current activity mode
   final ActivityMode currentMode;
 
-  /// Current glycemic index coefficient (from last meal)
+  /// Current glycemic index coefficient (NORMALIZED: 0.01-1.0)
+  /// Raw GI (1-100) is divided by 100 before storing
   final double currentGlycemicIndex;
 
   /// Timestamp of the last state update
@@ -22,6 +27,9 @@ class FuelState extends Equatable {
   /// Name of the last meal consumed
   final String? lastMealName;
 
+  /// List of active meal IDs currently in the stomach (NEW: for weighted GI)
+  final List<String>? activeMealIds;
+
   const FuelState({
     required this.currentVolume,
     required this.currentMode,
@@ -29,14 +37,17 @@ class FuelState extends Equatable {
     required this.lastUpdated,
     this.lastMealTime,
     this.lastMealName,
+    this.activeMealIds,
   });
 
   /// Factory constructor for initial/default state
+  /// NOTE: currentGlycemicIndex is normalized to 0.01-1.0 range (matching backend)
+  /// Default 0.5 = GI of 50 / 100
   factory FuelState.initial() {
     return FuelState(
       currentVolume: 50.0,
       currentMode: ActivityMode.resting,
-      currentGlycemicIndex: 1.0,
+      currentGlycemicIndex: 0.5, // Normalized: GI 50 / 100 = 0.5
       lastUpdated: DateTime.now(),
     );
   }
@@ -50,7 +61,12 @@ class FuelState extends Equatable {
   }
 
   /// Check if at critical threshold (notification trigger)
+  /// Note: This will be customized per user's sensitivity setting
   bool get isAtCriticalThreshold => currentVolume <= 30 && currentVolume > 0;
+  
+  /// Check if at custom threshold (for user sensitivity)
+  bool isAtCustomThreshold(double threshold) =>
+      currentVolume <= threshold && currentVolume > 0;
 
   /// Check if depleted
   bool get isDepleted => currentVolume <= 0;
@@ -81,12 +97,15 @@ class FuelState extends Equatable {
   }
 
   /// Apply decay for a given time delta
+  /// effectiveGI parameter supports weighted GI from multiple meals
   FuelState applyDecay({
     required Duration elapsed,
     double baseRate = 0.5,
+    double? effectiveGI,
   }) {
     final minutes = elapsed.inSeconds / 60.0;
-    final decay = baseRate * currentGlycemicIndex * currentMode.multiplier * minutes;
+    final giToUse = effectiveGI ?? currentGlycemicIndex;
+    final decay = baseRate * giToUse * currentMode.multiplier * minutes;
     final newVolume = (currentVolume - decay).clamp(0.0, 100.0);
 
     return copyWith(
@@ -96,19 +115,35 @@ class FuelState extends Equatable {
   }
 
   /// Add fuel from a meal (additive, capped at 100%)
+  /// mealId is optional for tracking active meals
+  /// 
+  /// IMPORTANT: newGlycemicIndex should be passed as RAW value (1-100).
+  /// It will be normalized to 0.01-1.0 range internally.
   FuelState addFuel({
     required double amount,
     required double newGlycemicIndex,
     required String mealName,
+    String? mealId,
   }) {
     final newVolume = (currentVolume + amount).clamp(0.0, 100.0);
+    
+    // Normalize GI from raw (1-100) to coefficient (0.01-1.0)
+    // This matches the backend's normalization: glycemicIndex / 100
+    final normalizedGI = (newGlycemicIndex / 100).clamp(0.01, 1.0);
+    
+    // Add meal ID to active meals list
+    final updatedActiveMealIds = List<String>.from(activeMealIds ?? []);
+    if (mealId != null && !updatedActiveMealIds.contains(mealId)) {
+      updatedActiveMealIds.add(mealId);
+    }
 
     return copyWith(
       currentVolume: newVolume,
-      currentGlycemicIndex: newGlycemicIndex,
+      currentGlycemicIndex: normalizedGI,
       lastUpdated: DateTime.now(),
       lastMealTime: DateTime.now(),
       lastMealName: mealName,
+      activeMealIds: updatedActiveMealIds,
     );
   }
 
@@ -119,6 +154,7 @@ class FuelState extends Equatable {
     DateTime? lastUpdated,
     DateTime? lastMealTime,
     String? lastMealName,
+    List<String>? activeMealIds,
   }) {
     return FuelState(
       currentVolume: currentVolume ?? this.currentVolume,
@@ -127,6 +163,7 @@ class FuelState extends Equatable {
       lastUpdated: lastUpdated ?? this.lastUpdated,
       lastMealTime: lastMealTime ?? this.lastMealTime,
       lastMealName: lastMealName ?? this.lastMealName,
+      activeMealIds: activeMealIds ?? this.activeMealIds,
     );
   }
 
@@ -138,6 +175,7 @@ class FuelState extends Equatable {
         lastUpdated,
         lastMealTime,
         lastMealName,
+        activeMealIds,
       ];
 }
 
