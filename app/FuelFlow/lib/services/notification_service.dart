@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// NotificationService - Handles local notifications for FuelFlow
 /// 
@@ -12,6 +13,11 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
+
+  /// Notification ID constants
+  static const int _criticalAlertId = 1;
+  static const int _refuelReminderId = 2;
+  static const int _scheduledAlertId = 3;
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -132,6 +138,60 @@ class NotificationService {
       'It\'s been $minutesSinceLastMeal minutes since your last meal. Consider a snack to maintain energy levels.',
       details,
     );
+  }
+
+  /// Schedule an energy alert notification for a specific time
+  /// This is used when activity mode changes to schedule alerts based on
+  /// the backend's calculated alertTime
+  Future<void> scheduleEnergyAlert({
+    required DateTime alertTime,
+    required String currentMode,
+  }) async {
+    // Cancel any existing scheduled alert
+    await _notifications.cancel(_scheduledAlertId);
+
+    // Don't schedule if alertTime is in the past
+    if (alertTime.isBefore(DateTime.now())) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      'fuel_flow_critical',
+      'Critical Energy Alerts',
+      channelDescription: 'Notifications when energy levels are critically low',
+      importance: Importance.high,
+      priority: Priority.high,
+      color: Color(0xFFFF003C),
+      enableVibration: true,
+      playSound: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    final scheduledTz = tz.TZDateTime.from(alertTime, tz.local);
+
+    await _notifications.zonedSchedule(
+      _scheduledAlertId,
+      'Energy alert approaching!',
+      'Current mode: $currentMode. Your energy will hit the red zone soon. Consider eating a snack to maintain your levels.',
+      scheduledTz,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: null,
+    );
+  }
+
+  /// Cancel scheduled energy alert (call when user eats or changes activity)
+  Future<void> cancelScheduledAlert() async {
+    await _notifications.cancel(_scheduledAlertId);
   }
 
   /// Cancel all notifications

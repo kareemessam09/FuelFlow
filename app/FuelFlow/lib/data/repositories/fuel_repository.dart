@@ -1,102 +1,75 @@
 import 'package:dio/dio.dart';
 import '../../core/constants/constants.dart';
 import '../../domain/entities/entities.dart';
+import '../datasources/remote/api_client.dart';
 
-/// FuelRepository - Handles API calls for fuel state management
+/// FuelRepository — wraps backend energy and activity endpoints
 abstract class FuelRepository {
-  /// Get the current fuel state from server
+  /// Get the current energy state from the backend (GET /energy/status)
   Future<FuelState> getCurrentState();
 
-  /// Sync local state with server
-  Future<FuelState> syncState(FuelState localState);
-
-  /// Update activity mode on server
-  Future<void> updateActivityMode(ActivityMode mode);
+  /// Toggle the user's activity mode on the backend (POST /activity/toggle)
+  /// Returns the server-calculated alert time (when energy will hit critical threshold)
+  Future<DateTime?> updateActivityMode(ActivityMode mode);
 }
 
-/// Implementation of FuelRepository
 class FuelRepositoryImpl implements FuelRepository {
   final Dio _dio;
 
-  FuelRepositoryImpl({Dio? dio})
-      : _dio = dio ??
-            Dio(BaseOptions(
-              baseUrl: AppConstants.baseApiUrl,
-              connectTimeout: const Duration(seconds: 10),
-              receiveTimeout: const Duration(seconds: 10),
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            ));
+  FuelRepositoryImpl({Dio? dio}) : _dio = dio ?? ApiClient.instance;
 
   @override
   Future<FuelState> getCurrentState() async {
     try {
-      final response = await _dio.get(AppConstants.fuelStateEndpoint);
-
-      if (response.statusCode == 200) {
-        return _parseFuelState(response.data);
-      }
-
-      throw Exception('Failed to get fuel state: ${response.statusCode}');
+      final response = await _dio.get(AppConstants.energyStatusEndpoint);
+      return _parseEnergyResponse(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
   @override
-  Future<FuelState> syncState(FuelState localState) async {
+  Future<DateTime?> updateActivityMode(ActivityMode mode) async {
     try {
       final response = await _dio.post(
-        AppConstants.fuelStateEndpoint,
+        AppConstants.activityToggleEndpoint,
         data: {
-          'currentVolume': localState.currentVolume,
-          'currentMode': localState.currentMode.toApiString(),
-          'currentGlycemicIndex': localState.currentGlycemicIndex,
-          'lastUpdated': localState.lastUpdated.toIso8601String(),
+          // Backend ToggleActivityDto only takes modeType (userId comes from JWT)
+          'modeType': mode.toApiString(),
         },
       );
-
-      if (response.statusCode == 200) {
-        return _parseFuelState(response.data);
+      
+      // Parse alertTime from response if present
+      final data = response.data as Map<String, dynamic>?;
+      if (data != null && data['alertTime'] != null) {
+        return DateTime.tryParse(data['alertTime'] as String);
       }
-
-      throw Exception('Failed to sync state: ${response.statusCode}');
+      return null;
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  @override
-  Future<void> updateActivityMode(ActivityMode mode) async {
-    try {
-      final response = await _dio.post(
-        AppConstants.activityEndpoint,
-        data: {
-          'mode': mode.toApiString(),
-          'multiplier': mode.multiplier,
-          'startTime': DateTime.now().toIso8601String(),
-        },
-      );
+  /// Parses the GET /energy/status response into a [FuelState]
+  FuelState _parseEnergyResponse(Map<String, dynamic> json) {
+    final energyState = json['energyState'] as Map<String, dynamic>;
+    final currentActivityJson = json['currentActivity'] as Map<String, dynamic>?;
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Failed to update activity: ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
-  }
+    final volumeRemaining =
+        (energyState['volumeRemaining'] as num?)?.toDouble() ?? 0.0;
+    final modeTypeStr =
+        currentActivityJson?['modeType'] as String? ?? 'Resting';
+    final effectiveGI =
+        (json['effectiveGlycemicIndex'] as num?)?.toDouble() ?? 50.0;
 
-  FuelState _parseFuelState(Map<String, dynamic> json) {
     return FuelState(
-      currentVolume: (json['currentVolume'] as num).toDouble(),
-      currentMode: ActivityMode.fromString(json['currentMode'] as String),
-      currentGlycemicIndex: (json['currentGlycemicIndex'] as num?)?.toDouble() ?? 1.0,
-      lastUpdated: DateTime.parse(json['lastUpdated'] as String),
-      lastMealTime: json['lastMealTime'] != null
-          ? DateTime.parse(json['lastMealTime'] as String)
-          : null,
-      lastMealName: json['lastMealName'] as String?,
+      currentVolume: volumeRemaining,
+      currentMode: ActivityMode.fromApiString(modeTypeStr),
+      // Normalize GI from 1-100 backend scale to 0.01-1.0 local coefficient
+      currentGlycemicIndex: (effectiveGI / 100).clamp(0.01, 1.0),
+      lastUpdated: json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'] as String)
+          : DateTime.now(),
     );
   }
 
@@ -105,7 +78,7 @@ class FuelRepositoryImpl implements FuelRepository {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return Exception('Connection timeout. Please check your internet.');
+        return Exception('Connection timeout. Check your internet.');
       case DioExceptionType.connectionError:
         return Exception('No internet connection.');
       case DioExceptionType.badResponse:

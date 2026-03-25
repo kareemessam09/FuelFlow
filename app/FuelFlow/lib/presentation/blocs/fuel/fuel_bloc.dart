@@ -220,8 +220,16 @@ class FuelBloc extends Bloc<FuelEvent, FuelBlocState> {
       ),
     );
 
-    // Notify backend — fire-and-forget (don't block UI)
-    _fuelRepository.updateActivityMode(event.newMode).catchError((e) {
+    // Notify backend and handle alertTime response
+    _fuelRepository.updateActivityMode(event.newMode).then((alertTime) {
+      // Schedule notification for when energy will hit critical threshold
+      if (alertTime != null) {
+        NotificationService().scheduleEnergyAlert(
+          alertTime: alertTime,
+          currentMode: event.newMode.displayName,
+        );
+      }
+    }).catchError((e) {
       // Non-fatal: local state is already updated
       // ignore: avoid_print
       print('[FuelBloc] Failed to sync activity mode: $e');
@@ -299,6 +307,12 @@ class FuelBloc extends Bloc<FuelEvent, FuelBlocState> {
 
     try {
       final serverState = await _fuelRepository.getCurrentState();
+      
+      // CRITICAL: Reset the decay reference time to prevent time drift
+      // Without this, the next tick would calculate decay from the old reference,
+      // causing a "jump" in volume after sync
+      _lastDecayReferenceTime = DateTime.now();
+      
       emit(state.copyWith(
         fuelState: serverState,
         isSyncing: false,
@@ -375,6 +389,10 @@ class FuelBloc extends Bloc<FuelEvent, FuelBlocState> {
       isDecayActive: true,
       status: FuelBlocStatus.running,
     ));
+
+    // CRITICAL: Sync with server after resume to reconcile any drift
+    // that occurred while the app was backgrounded
+    add(const FuelSyncWithServer());
   }
 
   /// Reset to initial state
