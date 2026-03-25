@@ -98,3 +98,46 @@ All P0 and P1 tasks from the audit have been completed:
 2. **Correctness** (P0-2): GI normalization now consistent between app and backend (0.01-1.0 range)
 3. **Scalability** (P0-3): Energy status endpoint now uses O(1) delta-computation instead of O(n) replay
 4. **Accuracy** (P1-4): Overlapping meals use proper weighted GI calculation based on remaining volume
+
+---
+
+## QA Sync Integrity Fixes (2026-03-25)
+
+Additional fixes applied from `SYNC_INTEGRITY_REPORT.md`:
+
+| Fix | Description | Status |
+|-----|-------------|--------|
+| Fix 1 | Reset `_lastDecayReferenceTime` after server sync | DONE |
+| Fix 2 | Trigger server sync in `_onResumeDecay` | DONE |
+| Fix 3 | Handle `alertTime` from activity toggle response | DONE |
+
+**Changes Made:**
+- `fuel_bloc.dart:306` - Reset decay reference time after sync (prevents time drift)
+- `fuel_bloc.dart:388` - Added `add(const FuelSyncWithServer())` at end of `_onResumeDecay`
+- `fuel_repository.dart:31-49` - Updated `updateActivityMode()` to return `DateTime?` alertTime
+- `notification_service.dart:104-152` - Added `scheduleEnergyAlert()` with timezone support
+- `fuel_bloc.dart:225-234` - Updated `_onChangeActivity` to schedule notifications using alertTime
+
+---
+
+## Commit History
+| Commit | Description | Date |
+|--------|-------------|------|
+| 8fb24c9 | Sync integration fixes (Fix 1, 2, 3 from QA audit) | 2026-03-25 |
+| 433b69a | docs: update progress and task files with completion status | 2026-03-25 |
+| fd6e328 | P0-2 + P0-3 + P1-4: GI normalization, snapshot caching, weighted GI | 2026-03-25 |
+
+---
+
+## Files Modified
+
+### Flutter (app/FuelFlow/lib/)
+- `domain/entities/fuel_state.dart` - GI normalization fixes
+- `presentation/blocs/fuel/fuel_bloc.dart` - Weighted GI normalization, sync fixes
+- `data/repositories/fuel_repository.dart` - alertTime return type
+- `services/notification_service.dart` - scheduled alert support
+
+### Backend (backend/)
+- `prisma/schema.prisma` - EnergySnapshot FK, compound indexes
+- `src/energy/energy.service.ts` - Snapshot methods, meal remaining calculation
+- `src/energy/energy.controller.ts` - Delta-computation, weighted GI integration
