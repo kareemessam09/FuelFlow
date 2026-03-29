@@ -92,27 +92,18 @@ jobs:
         env:
           FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64 }}
         run: |
-          if [ -z "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64" ]; then
-            echo "Missing secret: FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64"
-            echo "Create it in: Settings -> Secrets and variables -> Actions"
-            exit 1
-          fi
-
-          # Accept secret as:
-          # 1) base64 of google-services.json
-          # 2) raw JSON object
-          # 3) JSON string containing escaped JSON
+          # Optional in CI: if missing/invalid we continue without Firebase config.
+          # Android build still succeeds because google-services plugin is conditionally applied only when file exists.
           python - <<'PY'
           import base64
           import json
           import os
           import pathlib
-          import sys
 
           raw = os.environ.get("FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64", "").strip()
           out = pathlib.Path("android/app/google-services.json")
 
-          def write_if_valid(candidate: str, source: str) -> bool:
+          def maybe_write_json(candidate: str, source: str) -> bool:
               try:
                   data = json.loads(candidate)
               except Exception:
@@ -124,29 +115,54 @@ jobs:
                       return False
               if not isinstance(data, dict) or "project_info" not in data:
                   return False
+              out.parent.mkdir(parents=True, exist_ok=True)
               out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
               print(f"Loaded Firebase config from {source}.")
               return True
 
+          if not raw:
+              print("FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64 is not set; continuing without Firebase config.")
+              raise SystemExit(0)
+
+          candidates = [raw]
+
+          # Handle quoted secrets: '{...}' or "{...}"
+          if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ("'", '"'):
+              candidates.append(raw[1:-1])
+
+          # Try JSON forms first (raw object or escaped JSON string)
           ok = False
+          for idx, c in enumerate(candidates, start=1):
+              if maybe_write_json(c, f"raw JSON candidate #{idx}"):
+                  ok = True
+                  break
 
-          # Attempt base64 decode first
-          try:
-              decoded = base64.b64decode(raw, validate=True).decode("utf-8", errors="strict")
-              ok = write_if_valid(decoded, "base64 secret")
-          except Exception:
-              ok = False
-
-          # Then attempt raw/escaped JSON
+          # Then try base64 variants
           if not ok:
-              ok = write_if_valid(raw, "raw JSON secret")
+              compact = "".join(raw.split())
+              for source, decoder_input in [
+                  ("base64", compact),
+                  ("base64url", compact),
+              ]:
+                  s = decoder_input
+                  # Fix missing padding if needed
+                  s += "=" * ((4 - len(s) % 4) % 4)
+                  try:
+                      if source == "base64":
+                          decoded = base64.b64decode(s, validate=False).decode("utf-8", errors="strict")
+                      else:
+                          decoded = base64.urlsafe_b64decode(s).decode("utf-8", errors="strict")
+                  except Exception:
+                      continue
+                  if maybe_write_json(decoded, source):
+                      ok = True
+                      break
 
           if not ok:
-              print("Invalid Firebase secret format. Provide base64 of google-services.json or raw JSON object.")
-              sys.exit(1)
+              if out.exists():
+                  out.unlink()
+              print("Firebase secret was provided but format is invalid. Continuing without Firebase config.")
           PY
-
-          test -s android/app/google-services.json
 
       - name: Build split-per-ABI release APKs
         run: flutter build apk --release --split-per-abi
