@@ -76,6 +76,9 @@ Recommended:
 flutterfire configure
 ```
 
+If Firebase files are missing, the app still runs with core features.
+Only Firebase push messaging is disabled.
+
 ## Quality checks
 
 ```bash
