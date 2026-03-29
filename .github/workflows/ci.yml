@@ -97,8 +97,17 @@ jobs:
             echo "Create it in: Settings -> Secrets and variables -> Actions"
             exit 1
           fi
-          echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json
+
+          # Accept either base64-encoded value or raw JSON for easier setup.
+          if echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json 2>/dev/null; then
+            echo "Decoded Firebase config from base64 secret."
+          else
+            echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64" > android/app/google-services.json
+            echo "Secret was not base64; treated as raw JSON."
+          fi
+
           test -s android/app/google-services.json
+          grep -q '"project_info"' android/app/google-services.json
 
       - name: Build split-per-ABI release APKs
         run: flutter build apk --release --split-per-abi
