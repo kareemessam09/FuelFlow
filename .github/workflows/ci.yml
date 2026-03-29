@@ -98,16 +98,55 @@ jobs:
             exit 1
           fi
 
-          # Accept either base64-encoded value or raw JSON for easier setup.
-          if echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json 2>/dev/null; then
-            echo "Decoded Firebase config from base64 secret."
-          else
-            echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64" > android/app/google-services.json
-            echo "Secret was not base64; treated as raw JSON."
-          fi
+          # Accept secret as:
+          # 1) base64 of google-services.json
+          # 2) raw JSON object
+          # 3) JSON string containing escaped JSON
+          python - <<'PY'
+          import base64
+          import json
+          import os
+          import pathlib
+          import sys
+
+          raw = os.environ.get("FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64", "").strip()
+          out = pathlib.Path("android/app/google-services.json")
+
+          def write_if_valid(candidate: str, source: str) -> bool:
+              try:
+                  data = json.loads(candidate)
+              except Exception:
+                  return False
+              if isinstance(data, str):
+                  try:
+                      data = json.loads(data)
+                  except Exception:
+                      return False
+              if not isinstance(data, dict) or "project_info" not in data:
+                  return False
+              out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+              print(f"Loaded Firebase config from {source}.")
+              return True
+
+          ok = False
+
+          # Attempt base64 decode first
+          try:
+              decoded = base64.b64decode(raw, validate=True).decode("utf-8", errors="strict")
+              ok = write_if_valid(decoded, "base64 secret")
+          except Exception:
+              ok = False
+
+          # Then attempt raw/escaped JSON
+          if not ok:
+              ok = write_if_valid(raw, "raw JSON secret")
+
+          if not ok:
+              print("Invalid Firebase secret format. Provide base64 of google-services.json or raw JSON object.")
+              sys.exit(1)
+          PY
 
           test -s android/app/google-services.json
-          grep -q '"project_info"' android/app/google-services.json
 
       - name: Build split-per-ABI release APKs
         run: flutter build apk --release --split-per-abi
