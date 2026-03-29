@@ -1,0 +1,36 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.jks
+*.keystore
+*.mobileprovision
+
+# Build artifacts
+**/build/
+**/dist/
+**/coverage/
+
+# Flutter / Dart
+**/.dart_tool/
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+
+# Node
+**/node_modules/
+
+# Firebase local config (must be provided privately per environment)
+app/FuelFlow/android/app/google-services.json
+app/FuelFlow/google-services.json
+app/FuelFlow/ios/Runner/GoogleService-Info.plist
