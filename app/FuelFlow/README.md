@@ -98,6 +98,18 @@ Output:
 
 - `build/app/outputs/flutter-apk/app-release.apk`
 
+Smaller APK option (recommended for distribution):
+
+```bash
+flutter build apk --release --split-per-abi
+```
+
+This produces:
+
+- `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
+- `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`
+- `build/app/outputs/flutter-apk/app-x86_64-release.apk`
+
 For GitHub Actions release builds, configure repository secret:
 
 - `FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64` (base64 of `android/app/google-services.json`)

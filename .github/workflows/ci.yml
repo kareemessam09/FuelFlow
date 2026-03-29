@@ -100,11 +100,14 @@ jobs:
           echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json
           test -s android/app/google-services.json
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Build split-per-ABI release APKs
+        run: flutter build apk --release --split-per-abi
 
       - name: Publish GitHub release with APK
         uses: softprops/action-gh-release@v2
         with:
-          files: app/FuelFlow/build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            app/FuelFlow/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            app/FuelFlow/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            app/FuelFlow/build/app/outputs/flutter-apk/app-x86_64-release.apk
           generate_release_notes: true

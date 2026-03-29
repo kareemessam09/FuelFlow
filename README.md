@@ -102,10 +102,12 @@ On push/PR:
 
 On tag push matching `v*` (example `v1.0.1`):
 
-- Build release APK
+- Build release APKs split per ABI (smaller downloads)
 - Create/update GitHub Release
 - Upload:
-  - `app/FuelFlow/build/app/outputs/flutter-apk/app-release.apk`
+  - `app/FuelFlow/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
+  - `app/FuelFlow/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`
+  - `app/FuelFlow/build/app/outputs/flutter-apk/app-x86_64-release.apk`
 
 To publish a release:
 
