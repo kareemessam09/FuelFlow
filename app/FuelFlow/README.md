@@ -98,6 +98,13 @@ Output:
 
 - `build/app/outputs/flutter-apk/app-release.apk`
 
+For GitHub Actions release builds, configure repository secret:
+
+- `FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64` (base64 of `android/app/google-services.json`)
+
+Without this secret, release CI intentionally fails because push notifications
+would not be fully configured in the generated APK.
+
 ### AAB (optional for Play Console)
 
 ```bash

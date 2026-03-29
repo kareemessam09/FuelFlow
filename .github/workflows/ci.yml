@@ -87,6 +87,19 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Restore Firebase Android config from secret
+        shell: bash
+        env:
+          FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          if [ -z "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64" ]; then
+            echo "Missing secret: FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64"
+            echo "Create it in: Settings -> Secrets and variables -> Actions"
+            exit 1
+          fi
+          echo "$FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64" | base64 --decode > android/app/google-services.json
+          test -s android/app/google-services.json
+
       - name: Build release APK
         run: flutter build apk --release
 

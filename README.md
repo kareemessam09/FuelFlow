@@ -114,6 +114,26 @@ git tag v1.0.2
 git push origin v1.0.2
 ```
 
+### Required GitHub secret for release APK
+
+The release job expects this repository secret:
+
+- `FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64`
+
+How to set it:
+
+1. Convert your `app/FuelFlow/android/app/google-services.json` to base64
+2. Go to GitHub repo → **Settings** → **Secrets and variables** → **Actions**
+3. Add a new repository secret with that exact name
+
+Example encoding command:
+
+```bash
+base64 -w 0 app/FuelFlow/android/app/google-services.json
+```
+
+If the secret is missing, release workflow fails fast with a clear message.
+
 ## Security and secrets
 
 - Firebase config files are intentionally ignored:
