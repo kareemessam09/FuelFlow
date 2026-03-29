@@ -1,0 +1,338 @@
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { GeminiService } from '../gemini/gemini.service';
+import { EnergyService } from '../energy/energy.service';
+import { CreateMealManualDto, MealResponseDto, UpdateMealDto } from './dto/create-meal.dto';
+import { ActivityMode } from '../energy/energy.constants';
+
+@Injectable()
+export class MealsService {
+  private readonly logger = new Logger(MealsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly geminiService: GeminiService,
+    private readonly energyService: EnergyService,
+  ) {}
+
+  /**
+   * Analyze food image and create a meal log
+   * This is the main "Snap & Fuel" feature
+   */
+  async createFromImage(
+    userId: string,
+    imageBuffer: Buffer,
+    mimeType: string,
+  ): Promise<MealResponseDto> {
+    // Verify user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Analyze the food image with Gemini
+    const analysis = await this.geminiService.analyzeFoodImage(
+      imageBuffer,
+      mimeType,
+    );
+
+    this.logger.log(
+      `Food analyzed for user ${userId}: ${analysis.foodName} (GI: ${analysis.glycemicIndex})`,
+    );
+
+    // Get current energy state to calculate new volume
+    const currentState = await this.calculateCurrentEnergyState(userId);
+
+    // Add meal to current volume (capped at 100%)
+    const newVolume = this.energyService.addMealToVolume(
+      currentState.volumeRemaining,
+      {
+        fullnessVolume: analysis.fullnessVolume,
+        glycemicIndex: analysis.glycemicIndex,
+        absorptionProfile: analysis.absorptionProfile,
+        estimatedSatiety: analysis.estimatedSatietyMinutes,
+      },
+    );
+
+    // Create the meal log
+    const meal = await this.prisma.mealLog.create({
+      data: {
+        userId,
+        foodName: analysis.foodName,
+        fullnessVolume: analysis.fullnessVolume,
+        absorptionRate: analysis.glycemicIndex,
+        absorptionProfile: analysis.absorptionProfile,
+        estimatedSatiety: analysis.estimatedSatietyMinutes,
+        imageUrl: null, // Could store in cloud storage if needed
+      },
+    });
+
+    // Get current activity multiplier
+    const activeActivity = await this.getActiveActivity(userId);
+    const multiplier = activeActivity?.multiplier ?? 1.0;
+
+    // Calculate energy state after meal
+    const energyState = this.energyService.calculateEnergyState(
+      newVolume,
+      analysis.glycemicIndex,
+      multiplier,
+    );
+
+    return {
+      ...meal,
+      energyState,
+      aiAnalysis: {
+        confidence: analysis.confidence,
+        notes: analysis.notes,
+      },
+    };
+  }
+
+  /**
+   * Create a meal manually (without image analysis)
+   */
+  async createManual(dto: CreateMealManualDto): Promise<MealResponseDto> {
+    // Verify user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: dto.userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${dto.userId} not found`);
+    }
+
+    // Get current energy state
+    const currentState = await this.calculateCurrentEnergyState(dto.userId);
+
+    // Add meal to current volume
+    const newVolume = this.energyService.addMealToVolume(
+      currentState.volumeRemaining,
+      {
+        fullnessVolume: dto.fullnessVolume,
+        glycemicIndex: dto.absorptionRate,
+        absorptionProfile: dto.absorptionProfile!,
+        estimatedSatiety: dto.estimatedSatiety,
+      },
+    );
+
+    // Create the meal log
+    const meal = await this.prisma.mealLog.create({
+      data: {
+        userId: dto.userId,
+        foodName: dto.foodName,
+        fullnessVolume: dto.fullnessVolume,
+        absorptionRate: dto.absorptionRate,
+        absorptionProfile: dto.absorptionProfile ?? 'Balanced',
+        estimatedSatiety: dto.estimatedSatiety,
+        imageUrl: dto.imageUrl,
+      },
+    });
+
+    // Get current activity multiplier
+    const activeActivity = await this.getActiveActivity(dto.userId);
+    const multiplier = activeActivity?.multiplier ?? 1.0;
+
+    // Calculate energy state after meal
+    const energyState = this.energyService.calculateEnergyState(
+      newVolume,
+      dto.absorptionRate,
+      multiplier,
+    );
+
+    return {
+      ...meal,
+      energyState,
+    };
+  }
+
+  /**
+   * Get all meals for a user
+   */
+  async findAllByUser(userId: string) {
+    return this.prisma.mealLog.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Get a single meal
+   */
+  async findOne(id: number) {
+    const meal = await this.prisma.mealLog.findUnique({
+      where: { id },
+    });
+
+    if (!meal) {
+      throw new NotFoundException(`Meal with ID ${id} not found`);
+    }
+
+    return meal;
+  }
+
+  /**
+   * Delete a meal
+   */
+  async remove(id: number) {
+    await this.findOne(id);
+
+    return this.prisma.mealLog.delete({
+      where: { id },
+    });
+  }
+
+  /**
+   * Update a meal
+   */
+  async update(id: number, dto: UpdateMealDto) {
+    await this.findOne(id);
+
+    return this.prisma.mealLog.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
+  /**
+   * Get today's meals for a user
+   */
+  async findTodaysMeals(userId: string) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    return this.prisma.mealLog.findMany({
+      where: {
+        userId,
+        createdAt: {
+          gte: startOfDay,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Calculate current energy state for a user
+   * This considers all meals and activity logs
+   */
+  async calculateCurrentEnergyState(userId: string) {
+    const now = new Date();
+
+    // Get recent meals (last 24 hours)
+    const recentMeals = await this.prisma.mealLog.findMany({
+      where: {
+        userId,
+        createdAt: {
+          gte: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // Get activity logs for the period
+    const activityLogs = await this.prisma.activityLog.findMany({
+      where: {
+        userId,
+        startTime: {
+          gte: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+        },
+      },
+      orderBy: { startTime: 'asc' },
+    });
+
+    if (recentMeals.length === 0) {
+      // No recent meals, return empty state
+      return this.energyService.calculateEnergyState(0, 50, 1.0);
+    }
+
+    // Calculate volume by processing each meal and applying drain
+    let currentVolume = 0;
+    let effectiveGI = 50;
+    let lastEventTime = recentMeals[0].createdAt;
+
+    for (const meal of recentMeals) {
+      // Apply drain from last event to this meal
+      const minutesSinceLastEvent =
+        (meal.createdAt.getTime() - lastEventTime.getTime()) / (1000 * 60);
+
+      if (minutesSinceLastEvent > 0) {
+        const multiplier = this.getMultiplierForTime(
+          activityLogs,
+          lastEventTime,
+        );
+        currentVolume = this.energyService.calculateRemainingVolume({
+          startVolume: currentVolume,
+          glycemicIndex: effectiveGI,
+          activityMultiplier: multiplier,
+          elapsedMinutes: minutesSinceLastEvent,
+        });
+      }
+
+      // Add this meal
+      currentVolume = this.energyService.addMealToVolume(currentVolume, {
+        fullnessVolume: meal.fullnessVolume,
+        glycemicIndex: meal.absorptionRate,
+        absorptionProfile: meal.absorptionProfile as any,
+        estimatedSatiety: meal.estimatedSatiety,
+      });
+
+      effectiveGI = meal.absorptionRate;
+      lastEventTime = meal.createdAt;
+    }
+
+    // Apply drain from last meal to now
+    const minutesSinceLastMeal =
+      (now.getTime() - lastEventTime.getTime()) / (1000 * 60);
+    const currentMultiplier = this.getMultiplierForTime(activityLogs, now);
+
+    currentVolume = this.energyService.calculateRemainingVolume({
+      startVolume: currentVolume,
+      glycemicIndex: effectiveGI,
+      activityMultiplier: currentMultiplier,
+      elapsedMinutes: minutesSinceLastMeal,
+    });
+
+    return this.energyService.calculateEnergyState(
+      currentVolume,
+      effectiveGI,
+      currentMultiplier,
+    );
+  }
+
+  /**
+   * Get the activity multiplier that was active at a given time
+   */
+  private getMultiplierForTime(
+    activityLogs: Array<{
+      modeType: string;
+      multiplier: number;
+      startTime: Date;
+      endTime: Date | null;
+    }>,
+    time: Date,
+  ): number {
+    // Find the activity that was active at the given time
+    const activeLog = activityLogs.find(
+      (log) =>
+        log.startTime <= time && (log.endTime === null || log.endTime >= time),
+    );
+
+    return activeLog?.multiplier ?? 1.0; // Default to Resting
+  }
+
+  /**
+   * Get the currently active activity for a user
+   */
+  private async getActiveActivity(userId: string) {
+    return this.prisma.activityLog.findFirst({
+      where: {
+        userId,
+        endTime: null,
+      },
+      orderBy: { startTime: 'desc' },
+    });
+  }
+}
