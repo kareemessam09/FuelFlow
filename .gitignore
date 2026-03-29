@@ -34,3 +34,10 @@ Thumbs.db
 app/FuelFlow/android/app/google-services.json
 app/FuelFlow/google-services.json
 app/FuelFlow/ios/Runner/GoogleService-Info.plist
+app/FuelFlow/android/**/google-services.json
+app/FuelFlow/ios/**/GoogleService-Info.plist
+app/FuelFlow/lib/firebase_app_id_file.json
+
+# Common mobile secret/env files
+app/FuelFlow/**/*.env
+app/FuelFlow/**/.env
