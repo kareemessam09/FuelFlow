@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # UI & Icons
   cupertino_icons: ^1.0.8
@@ -43,11 +45,12 @@ dependencies:
   flutter_local_notifications: ^18.0.1
 
   # Utilities
-  intl: ^0.19.0
+  intl: ^0.20.2
   uuid: ^4.5.1
   get_it: ^8.0.2
   injectable: ^2.5.0
   firebase_core: ^4.6.0
+  firebase_messaging: ^16.0.3
   timezone: ^0.10.1
 
 dev_dependencies:

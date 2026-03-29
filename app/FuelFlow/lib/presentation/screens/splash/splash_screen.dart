@@ -125,6 +125,17 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Text(
+                    'Tracking energy, meals, and activity...',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ),
               ],
             ),
           );

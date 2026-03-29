@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -11,11 +13,16 @@ import 'data/datasources/local/fuel_state_adapter.dart';
 import 'data/datasources/local/meal_adapter.dart';
 import 'data/datasources/local/user_adapter.dart';
 import 'data/repositories/auth_repository.dart';
-import 'presentation/blocs/auth/auth.dart';
-import 'presentation/blocs/fuel/fuel.dart';
-import 'presentation/blocs/meal/meal.dart';
+import 'presentation/blocs/blocs.dart';
 import 'router/router.dart';
 import 'services/services.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService().initialize();
+  await NotificationService().showRemoteMessage(message);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +33,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Initialize Hive for local persistence
   await Hive.initFlutter();
@@ -58,7 +66,7 @@ void main() async {
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
       statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: Color(0xFF0D0D12),
+      systemNavigationBarColor: Color(0xFF161B22),
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
@@ -69,6 +77,7 @@ void main() async {
   // Initialize notification service
   await NotificationService().initialize();
   await NotificationService().requestPermissions();
+  await NotificationService().initializeRemoteMessaging();
 
   runApp(const FuelFlowApp());
 }
@@ -95,6 +104,18 @@ class FuelFlowApp extends StatelessWidget {
         BlocProvider<MealCaptureBloc>(
           create: (context) =>
               MealCaptureBloc()..add(const MealCaptureInitialize()),
+        ),
+        // MealsBloc - Meal history screen
+        BlocProvider<MealsBloc>(
+          create: (context) => MealsBloc(),
+        ),
+        // AnalyticsBloc - Analytics screen
+        BlocProvider<AnalyticsBloc>(
+          create: (context) => AnalyticsBloc(),
+        ),
+        // FavoritesBloc - Favorites screen
+        BlocProvider<FavoritesBloc>(
+          create: (context) => FavoritesBloc(),
         ),
       ],
       child: _FuelFlowAppContent(),
@@ -176,6 +197,25 @@ class _FuelFlowAppContentState extends State<_FuelFlowAppContent>
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         routerConfig: AppRouter.router,
+        supportedLocales: const [
+          Locale('en'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        builder: (context, child) {
+          final mediaQuery = MediaQuery.of(context);
+          final textScaler = mediaQuery.textScaler.clamp(
+            minScaleFactor: 0.9,
+            maxScaleFactor: 1.25,
+          );
+          return MediaQuery(
+            data: mediaQuery.copyWith(textScaler: textScaler),
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
       ),
     );
   }

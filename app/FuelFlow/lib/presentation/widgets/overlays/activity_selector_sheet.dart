@@ -33,7 +33,7 @@ class ActivitySelectorSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.95),
+        color: AppColors.surface.withValues(alpha: 0.95),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: AppColors.border),
       ),
@@ -80,16 +80,20 @@ class ActivitySelectorSheet extends StatelessWidget {
             const Divider(color: AppColors.border, height: 1),
 
             // Activity options
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Column(
-                children: ActivityMode.values.map((mode) {
-                  return _ActivityModeItem(
-                    mode: mode,
-                    isSelected: mode == currentMode,
-                    onTap: () => onModeSelected(mode),
-                  );
-                }).toList(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Column(
+                    children: ActivityMode.values.map((mode) {
+                      return _ActivityModeItem(
+                        mode: mode,
+                        isSelected: mode == currentMode,
+                        onTap: () => onModeSelected(mode),
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
             ),
 
@@ -123,7 +127,7 @@ class _ActivityModeItem extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : AppColors.surfaceElevated,
+          color: isSelected ? color.withValues(alpha: 0.15) : AppColors.surfaceElevated,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? color : AppColors.border,
@@ -132,7 +136,7 @@ class _ActivityModeItem extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.3),
+                    color: color.withValues(alpha: 0.3),
                     blurRadius: 12,
                     spreadRadius: 0,
                   ),
@@ -146,7 +150,7 @@ class _ActivityModeItem extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -188,7 +192,7 @@ class _ActivityModeItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -228,6 +232,8 @@ class _ActivityModeItem extends StatelessWidget {
         return Icons.fitness_center;
       case ActivityMode.gymCardio:
         return Icons.directions_run;
+      case ActivityMode.sleeping:
+        return Icons.bedtime;
     }
   }
 }

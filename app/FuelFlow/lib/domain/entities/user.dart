@@ -7,6 +7,7 @@ class User extends Equatable {
   final String? displayName;
   final SensitivityLevel sensitivityLevel;
   final TargetGoal targetGoal;
+  final String units;
   final DateTime createdAt;
 
   const User({
@@ -15,6 +16,7 @@ class User extends Equatable {
     this.displayName,
     this.sensitivityLevel = SensitivityLevel.sensitive,
     this.targetGoal = TargetGoal.maintenance,
+    this.units = 'metric',
     required this.createdAt,
   });
 
@@ -24,6 +26,7 @@ class User extends Equatable {
       id: 'guest',
       sensitivityLevel: SensitivityLevel.sensitive,
       targetGoal: TargetGoal.maintenance,
+      units: 'metric',
       createdAt: DateTime.now(),
     );
   }
@@ -34,6 +37,7 @@ class User extends Equatable {
     String? displayName,
     SensitivityLevel? sensitivityLevel,
     TargetGoal? targetGoal,
+    String? units,
     DateTime? createdAt,
   }) {
     return User(
@@ -42,6 +46,7 @@ class User extends Equatable {
       displayName: displayName ?? this.displayName,
       sensitivityLevel: sensitivityLevel ?? this.sensitivityLevel,
       targetGoal: targetGoal ?? this.targetGoal,
+      units: units ?? this.units,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -53,6 +58,7 @@ class User extends Equatable {
         displayName,
         sensitivityLevel,
         targetGoal,
+        units,
         createdAt,
       ];
 }

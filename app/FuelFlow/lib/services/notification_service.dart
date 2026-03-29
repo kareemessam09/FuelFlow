@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -19,8 +20,10 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
   bool _isInitialized = false;
+  bool _remoteMessagingInitialized = false;
   
   /// Callback for handling notification taps (set by main.dart)
   void Function(NotificationAction action)? onNotificationTap;
@@ -33,6 +36,8 @@ class NotificationService {
   /// Payload constants for routing
   static const String _payloadDashboard = 'dashboard';
   static const String _payloadMealCapture = 'meal_capture';
+  static const String _defaultRemoteChannelId = 'fuelflow_alerts';
+  static const String _defaultRemoteChannelName = 'FuelFlow Alerts';
 
   /// Initialize the notification service
   Future<void> initialize() async {
@@ -58,7 +63,33 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
+    await _createAndroidChannels();
     _isInitialized = true;
+  }
+
+  Future<void> initializeRemoteMessaging() async {
+    if (_remoteMessagingInitialized) return;
+
+    await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    FirebaseMessaging.onMessage.listen((message) async {
+      await showRemoteMessage(message);
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      onNotificationTap?.call(_actionFromRemoteMessage(message));
+    });
+
+    final initialMessage = await _firebaseMessaging.getInitialMessage();
+    if (initialMessage != null) {
+      onNotificationTap?.call(_actionFromRemoteMessage(initialMessage));
+    }
+
+    _remoteMessagingInitialized = true;
   }
 
   /// Request notification permissions (iOS specific)
@@ -84,6 +115,39 @@ class NotificationService {
     }
 
     return true;
+  }
+
+  Future<void> showRemoteMessage(RemoteMessage message) async {
+    final remoteNotification = message.notification;
+    if (remoteNotification == null) return;
+
+    final androidDetails = AndroidNotificationDetails(
+      _defaultRemoteChannelId,
+      _defaultRemoteChannelName,
+      channelDescription: 'Remote push notifications from backend',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      remoteNotification.title ?? 'FuelFlow',
+      remoteNotification.body ?? '',
+      details,
+      payload: _payloadFromRemoteMessage(message),
+    );
   }
 
   /// Show a critical energy alert notification
@@ -237,5 +301,54 @@ class NotificationService {
     // Invoke callback if set
     onNotificationTap?.call(action);
   }
-}
 
+  NotificationAction _actionFromRemoteMessage(RemoteMessage message) {
+    final payload = _payloadFromRemoteMessage(message);
+    if (payload == _payloadMealCapture) return NotificationAction.openMealCapture;
+    if (payload == _payloadDashboard) return NotificationAction.openDashboard;
+    return NotificationAction.none;
+  }
+
+  String _payloadFromRemoteMessage(RemoteMessage message) {
+    final action = message.data['action'];
+    final type = message.data['type'];
+    if (action == 'log_meal' || action == _payloadMealCapture || type == 'meal_reminder') {
+      return _payloadMealCapture;
+    }
+    if (action == _payloadDashboard || type == 'energy_alert') {
+      return _payloadDashboard;
+    }
+    return _payloadDashboard;
+  }
+
+  Future<void> _createAndroidChannels() async {
+    final android = _notifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return;
+
+    await android.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _defaultRemoteChannelId,
+        _defaultRemoteChannelName,
+        description: 'Remote push notifications from backend',
+        importance: Importance.high,
+      ),
+    );
+    await android.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'fuel_flow_critical',
+        'Critical Energy Alerts',
+        description: 'Notifications when energy levels are critically low',
+        importance: Importance.high,
+      ),
+    );
+    await android.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'fuel_flow_reminder',
+        'Refuel Reminders',
+        description: 'Gentle reminders to refuel',
+        importance: Importance.defaultImportance,
+      ),
+    );
+  }
+}

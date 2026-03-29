@@ -2,13 +2,14 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../core/constants/constants.dart';
 import '../../domain/entities/entities.dart';
+import '../datasources/remote/api_client.dart';
 
-/// MealRepository - Handles API calls for meal logging and AI analysis
+/// MealRepository — wraps backend /meals/* endpoints
 abstract class MealRepository {
-  /// Upload an image for AI analysis
+  /// Upload a food image for Gemini AI analysis (POST /meals/snap)
   Future<MealAnalysisResult> analyzeImage(File imageFile);
 
-  /// Log a confirmed meal
+  /// Log a meal manually (POST /meals/manual)
   Future<MealLog> logMeal({
     required String foodName,
     required double fullnessVolume,
@@ -18,30 +19,24 @@ abstract class MealRepository {
     String? imageUrl,
   });
 
-  /// Get meal history
+  /// Get meal history (GET /meals/my)
   Future<List<MealLog>> getMealHistory({int limit = 20});
+
+  /// Get today's meals (GET /meals/my/today)
+  Future<List<MealLog>> getTodaysMeals();
 }
 
-/// Implementation of MealRepository
 class MealRepositoryImpl implements MealRepository {
   final Dio _dio;
 
-  MealRepositoryImpl({Dio? dio})
-      : _dio = dio ??
-            Dio(BaseOptions(
-              baseUrl: AppConstants.baseApiUrl,
-              connectTimeout: const Duration(seconds: 30),
-              receiveTimeout: const Duration(seconds: 30),
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            ));
+  MealRepositoryImpl({Dio? dio}) : _dio = dio ?? ApiClient.instance;
 
   @override
   Future<MealAnalysisResult> analyzeImage(File imageFile) async {
     try {
-      // Create multipart form data
       final formData = FormData.fromMap({
+        // Backend expects the file field to be named 'image'
+        // No userId — JWT is in the Authorization header
         'image': await MultipartFile.fromFile(
           imageFile.path,
           filename: 'meal_${DateTime.now().millisecondsSinceEpoch}.jpg',
@@ -49,18 +44,14 @@ class MealRepositoryImpl implements MealRepository {
       });
 
       final response = await _dio.post(
-        AppConstants.mealAnalysisEndpoint,
+        AppConstants.mealSnapEndpoint,
         data: formData,
-        options: Options(
-          contentType: 'multipart/form-data',
-        ),
+        options: Options(contentType: 'multipart/form-data'),
       );
 
-      if (response.statusCode == 200) {
-        return _parseAnalysisResult(response.data);
-      }
-
-      throw Exception('Failed to analyze image: ${response.statusCode}');
+      // Backend returns a full MealLog + energyState on snap
+      return _parseSnapToAnalysisResult(
+          response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -76,23 +67,24 @@ class MealRepositoryImpl implements MealRepository {
     String? imageUrl,
   }) async {
     try {
-      final response = await _dio.post(
-        '/meal/log',
-        data: {
-          'foodName': foodName,
-          'fullnessVolume': fullnessVolume,
-          'absorptionRate': absorptionRate,
-          'absorptionProfile': absorptionProfile.name,
-          'estimatedSatietyMinutes': estimatedSatietyMinutes,
-          'imageUrl': imageUrl,
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return _parseMealLog(response.data);
+      final payload = <String, dynamic>{
+        'foodName': foodName,
+        'fullnessVolume': fullnessVolume,
+        'absorptionRate': absorptionRate,
+        'absorptionProfile': absorptionProfile.toApiString(),
+        // Backend field is estimatedSatiety (int minutes)
+        'estimatedSatiety': estimatedSatietyMinutes,
+      };
+      if (imageUrl != null) {
+        payload['imageUrl'] = imageUrl;
       }
 
-      throw Exception('Failed to log meal: ${response.statusCode}');
+      final response = await _dio.post(
+        AppConstants.mealManualEndpoint,
+        data: payload,
+      );
+
+      return _parseMealLog(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -101,50 +93,63 @@ class MealRepositoryImpl implements MealRepository {
   @override
   Future<List<MealLog>> getMealHistory({int limit = 20}) async {
     try {
-      final response = await _dio.get(
-        '/meal/history',
-        queryParameters: {'limit': limit},
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['meals'] ?? [];
-        return data.map((json) => _parseMealLog(json)).toList();
-      }
-
-      throw Exception('Failed to get meal history: ${response.statusCode}');
+      final response = await _dio.get(AppConstants.mealHistoryEndpoint);
+      final List<dynamic> data = response.data as List<dynamic>? ?? [];
+      return data
+          .map((json) => _parseMealLog(json as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  MealAnalysisResult _parseAnalysisResult(Map<String, dynamic> json) {
+  @override
+  Future<List<MealLog>> getTodaysMeals() async {
+    try {
+      final response = await _dio.get(AppConstants.mealTodayEndpoint);
+      final List<dynamic> data = response.data as List<dynamic>? ?? [];
+      return data
+          .map((json) => _parseMealLog(json as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  // ── Parsers ────────────────────────────────────────────────────────────────
+
+  /// The /meals/snap endpoint returns a MealLog-shaped object + aiAnalysis + energyState
+  MealAnalysisResult _parseSnapToAnalysisResult(Map<String, dynamic> json) {
+    final aiAnalysis = json['aiAnalysis'] as Map<String, dynamic>?;
     return MealAnalysisResult(
       foodName: json['foodName'] as String,
       absorptionProfile: AbsorptionProfile.fromString(
-        json['absorptionProfile'] as String,
+        json['absorptionProfile'] as String? ?? 'Balanced',
       ),
-      glycemicIndex: (json['glycemicIndex'] as num).toDouble(),
-      estimatedSatietyMinutes: json['estimatedSatietyMinutes'] as int,
+      // Backend stores absorptionRate (1-100 GI scale); keep as-is for display
+      glycemicIndex: (json['absorptionRate'] as num?)?.toDouble() ?? 50.0,
+      estimatedSatietyMinutes: json['estimatedSatiety'] as int? ?? 120,
       estimatedFullnessPercentage:
-          (json['estimatedFullnessPercentage'] as num).toDouble(),
-      nutritionSummary: json['nutritionSummary'] as String?,
-      detectedIngredients: (json['detectedIngredients'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
+          (json['fullnessVolume'] as num?)?.toDouble() ?? 30.0,
+      nutritionSummary: aiAnalysis?['notes'] as String?,
+      detectedIngredients: null, // Backend doesn't return ingredient list
     );
   }
 
   MealLog _parseMealLog(Map<String, dynamic> json) {
     return MealLog(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
+      // Backend MealLog id is an int; convert to String for the app entity
+      id: json['id']?.toString() ?? '',
+      userId: json['userId'] as String? ?? '',
       foodName: json['foodName'] as String,
       fullnessVolume: (json['fullnessVolume'] as num).toDouble(),
+      // Backend field: absorptionRate (NOT glycemicIndex)
       absorptionRate: (json['absorptionRate'] as num).toDouble(),
       absorptionProfile: AbsorptionProfile.fromString(
-        json['absorptionProfile'] as String,
+        json['absorptionProfile'] as String? ?? 'Balanced',
       ),
-      estimatedSatietyMinutes: json['estimatedSatietyMinutes'] as int,
+      // Backend field: estimatedSatiety (NOT estimatedSatietyMinutes)
+      estimatedSatietyMinutes: json['estimatedSatiety'] as int? ?? 120,
       imageUrl: json['imageUrl'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
@@ -155,12 +160,13 @@ class MealRepositoryImpl implements MealRepository {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return Exception('Connection timeout. Please check your internet.');
+        return Exception('Connection timeout. Check your internet.');
       case DioExceptionType.connectionError:
         return Exception('No internet connection.');
       case DioExceptionType.badResponse:
-        final message = e.response?.data?['message'] ?? 'Server error';
-        return Exception('$message (${e.response?.statusCode})');
+        final msg = e.response?.data?['message'];
+        if (msg is String) return Exception(msg);
+        return Exception('Server error: ${e.response?.statusCode}');
       default:
         return Exception('Network error: ${e.message}');
     }

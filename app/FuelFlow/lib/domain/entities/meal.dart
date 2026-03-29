@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// Absorption profile for food - how quickly nutrients are released
+/// Absorption profile for food — how quickly nutrients are released
 enum AbsorptionProfile {
   fast('Fast', 'Quick energy release, spikes glucose'),
   balanced('Balanced', 'Moderate energy release'),
@@ -17,12 +17,25 @@ enum AbsorptionProfile {
         return AbsorptionProfile.fast;
       case 'balanced':
         return AbsorptionProfile.balanced;
+      case 'slow':
       case 'slow-release':
       case 'slow_release':
       case 'slowrelease':
         return AbsorptionProfile.slowRelease;
       default:
         return AbsorptionProfile.balanced;
+    }
+  }
+
+  /// Convert to the backend's expected enum string (PascalCase, no hyphen)
+  String toApiString() {
+    switch (this) {
+      case AbsorptionProfile.fast:
+        return 'Fast';
+      case AbsorptionProfile.balanced:
+        return 'Balanced';
+      case AbsorptionProfile.slowRelease:
+        return 'Slow';
     }
   }
 }
@@ -79,7 +92,8 @@ class MealLog extends Equatable {
       fullnessVolume: fullnessVolume ?? this.fullnessVolume,
       absorptionRate: absorptionRate ?? this.absorptionRate,
       absorptionProfile: absorptionProfile ?? this.absorptionProfile,
-      estimatedSatietyMinutes: estimatedSatietyMinutes ?? this.estimatedSatietyMinutes,
+      estimatedSatietyMinutes:
+          estimatedSatietyMinutes ?? this.estimatedSatietyMinutes,
       imageUrl: imageUrl ?? this.imageUrl,
       createdAt: createdAt ?? this.createdAt,
     );

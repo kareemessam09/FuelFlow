@@ -33,24 +33,37 @@ Many endpoints return an `EnergyState` object. This is the core data the Flutter
 
 ---
 
-### 1. User Endpoints
+### 1. User Endpoints (Authentication)
 
-#### Create User
-- **Method:** `POST /api/users`
+The backend uses JWT for authentication. You must register or login to receive a token, and include it in the `Authorization: Bearer <token>` header for all protected requests.
+
+#### Register
+- **Method:** `POST /auth/register`
 - **Body:**
   ```json
   {
     "email": "user@example.com",
-    "name": "John Doe", // Optional
-    "sensitivityLevel": "Sensitive", // Optional
-    "targetGoal": "Maintenance" // Optional
+    "password": "securePassword123",
+    "name": "John Doe" // Optional
   }
   ```
-- **Response:** Returns the created user object including their `id` (UUID) which you must save locally (e.g., using SharedPreferences) for all subsequent API calls.
+- **Response:** Returns the created user object and `accessToken`. Save this token securely.
 
-#### Get User
-- **Method:** `GET /api/users/:id`
-- **Response:** Returns user profile along with recent `mealLogs` (last 10) and `activityLogs` (last 5).
+#### Login
+- **Method:** `POST /auth/login`
+- **Body:**
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "securePassword123"
+  }
+  ```
+- **Response:** Returns user object and `accessToken`.
+
+#### Get User Profile
+- **Method:** `GET /users/:id`
+- **Headers:** `Authorization: Bearer <token>`
+- **Response:** Returns user profile along with recent `mealLogs` and `activityLogs`.
 
 ---
 
@@ -59,8 +72,8 @@ Many endpoints return an `EnergyState` object. This is the core data the Flutter
 #### Upload AI Food Image (Core Feature)
 - **Method:** `POST /api/meals/snap`
 - **Content-Type:** `multipart/form-data`
+- **Headers:** `Authorization: Bearer <token>`
 - **Body payload:**
-  - `userId`: String (UUID)
   - `image`: File (jpeg/png/webp, max 10MB)
 - **Response (201 Created):**
   ```json
@@ -88,10 +101,10 @@ Many endpoints return an `EnergyState` object. This is the core data the Flutter
 
 #### Manual Meal Log
 - **Method:** `POST /api/meals/manual`
+- **Headers:** `Authorization: Bearer <token>`
 - **Body:**
   ```json
   {
-    "userId": "uuid...",
     "foodName": "Protein Shake",
     "fullnessVolume": 30, // 0-100
     "absorptionRate": 25, // 1-100 (Glycemic Index)
@@ -111,10 +124,10 @@ Many endpoints return an `EnergyState` object. This is the core data the Flutter
 #### Toggle Activity Mode
 Call this when the user switches what they are doing. The backend handles closing the previous activity automatically.
 - **Method:** `POST /api/activity/toggle`
+- **Headers:** `Authorization: Bearer <token>`
 - **Body:**
   ```json
   {
-    "userId": "uuid...",
     "modeType": "Studying" // Must match ActivityModes enum
   }
   ```

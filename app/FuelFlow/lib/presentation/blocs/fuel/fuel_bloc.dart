@@ -441,8 +441,9 @@ class FuelBloc extends Bloc<FuelEvent, FuelBlocState> {
   /// Start the server sync timer
   void _startSyncTimer() {
     _syncTimer?.cancel();
+    final syncIntervalMs = AppConstants.serverSyncIntervalMs;
     _syncTimer = Timer.periodic(
-      const Duration(milliseconds: AppConstants.serverSyncIntervalMs),
+      Duration(milliseconds: syncIntervalMs),
       (_) => add(const FuelSyncWithServer()),
     );
   }
