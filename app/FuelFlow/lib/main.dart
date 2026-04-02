@@ -11,6 +11,7 @@ import 'core/theme/theme.dart';
 import 'data/datasources/local/activity_adapter.dart';
 import 'data/datasources/local/fuel_state_adapter.dart';
 import 'data/datasources/local/meal_adapter.dart';
+import 'data/datasources/local/medication_adapter.dart';
 import 'data/datasources/local/user_adapter.dart';
 import 'data/repositories/auth_repository.dart';
 import 'presentation/blocs/blocs.dart';
@@ -45,6 +46,9 @@ void main() async {
   Hive.registerAdapter(MealLogAdapterAdapter()); // Generated adapter
   Hive.registerAdapter(FuelStateAdapterAdapter()); // Generated adapter
   Hive.registerAdapter(UserAdapterAdapter()); // Generated adapter
+  Hive.registerAdapter(MedicationAdapterAdapter()); // Generated adapter
+  Hive.registerAdapter(MedicationLogAdapterAdapter()); // Generated adapter
+  Hive.registerAdapter(MedicationScheduleAdapterAdapter()); // Generated adapter
   Hive.registerAdapter(SensitivityLevelAdapter());
   Hive.registerAdapter(TargetGoalAdapter());
 
@@ -53,6 +57,9 @@ void main() async {
   await Hive.openBox('user');
   await Hive.openBox('meals');
   await Hive.openBox('activities');
+  await Hive.openBox('medications');
+  await Hive.openBox('medicationLogs');
+  await Hive.openBox('medicationSchedules');
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([

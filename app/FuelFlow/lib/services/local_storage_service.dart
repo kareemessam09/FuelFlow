@@ -2,8 +2,10 @@ import 'package:hive/hive.dart';
 import '../data/datasources/local/activity_adapter.dart';
 import '../data/datasources/local/fuel_state_adapter.dart';
 import '../data/datasources/local/meal_adapter.dart';
+import '../data/datasources/local/medication_adapter.dart';
 import '../data/datasources/local/user_adapter.dart';
 import '../domain/entities/entities.dart';
+import '../data/models/medication_models.dart';
 
 /// LocalStorageService - Manages all local persistence using Hive
 ///
@@ -23,6 +25,9 @@ class LocalStorageService {
   static const String _userBox = 'user';
   static const String _mealsBox = 'meals';
   static const String _activitiesBox = 'activities';
+  static const String _medicationsBox = 'medications';
+  static const String _medicationLogsBox = 'medicationLogs';
+  static const String _medicationSchedulesBox = 'medicationSchedules';
 
   // Keys
   static const String _currentStateKey = 'currentState';
@@ -173,6 +178,110 @@ class LocalStorageService {
     await box.clear();
   }
 
+  // --- Medication Operations ---
+
+  Future<void> upsertMedication(Medication medication) async {
+    final box = Hive.box(_medicationsBox);
+    await box.put(medication.id, MedicationAdapter.fromModel(medication));
+  }
+
+  Future<void> upsertMedications(List<Medication> medications) async {
+    final box = Hive.box(_medicationsBox);
+    final data = <String, MedicationAdapter>{};
+    for (final medication in medications) {
+      data[medication.id] = MedicationAdapter.fromModel(medication);
+    }
+    await box.putAll(data);
+  }
+
+  List<Medication> getMedications() {
+    final box = Hive.box(_medicationsBox);
+    return box.values
+        .cast<MedicationAdapter>()
+        .map((adapter) => adapter.toModel())
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  Future<void> removeMedication(String medicationId) async {
+    final box = Hive.box(_medicationsBox);
+    await box.delete(medicationId);
+  }
+
+  Future<void> clearMedications() async {
+    final box = Hive.box(_medicationsBox);
+    await box.clear();
+  }
+
+  Future<void> addMedicationLog(MedicationLog log) async {
+    final box = Hive.box(_medicationLogsBox);
+    await box.add(MedicationLogAdapter.fromModel(log));
+  }
+
+  List<MedicationLog> getMedicationLogs() {
+    final box = Hive.box(_medicationLogsBox);
+    return box.values
+        .cast<MedicationLogAdapter>()
+        .map((adapter) => adapter.toModel())
+        .toList()
+      ..sort((a, b) => b.takenAt.compareTo(a.takenAt));
+  }
+
+  List<MedicationLog> getTodayMedicationLogs() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 1));
+    return getMedicationLogs()
+        .where(
+          (log) =>
+              !log.takenAt.isBefore(start) && log.takenAt.isBefore(end),
+        )
+        .toList();
+  }
+
+  Future<void> clearMedicationLogs() async {
+    final box = Hive.box(_medicationLogsBox);
+    await box.clear();
+  }
+
+  Future<void> upsertMedicationSchedule(MedicationSchedule schedule) async {
+    final box = Hive.box(_medicationSchedulesBox);
+    await box.put(
+      schedule.id,
+      MedicationScheduleAdapter.fromModel(schedule),
+    );
+  }
+
+  Future<void> upsertMedicationSchedules(
+    List<MedicationSchedule> schedules,
+  ) async {
+    final box = Hive.box(_medicationSchedulesBox);
+    final data = <String, MedicationScheduleAdapter>{};
+    for (final schedule in schedules) {
+      data[schedule.id] = MedicationScheduleAdapter.fromModel(schedule);
+    }
+    await box.putAll(data);
+  }
+
+  List<MedicationSchedule> getMedicationSchedules() {
+    final box = Hive.box(_medicationSchedulesBox);
+    return box.values
+        .cast<MedicationScheduleAdapter>()
+        .map((adapter) => adapter.toModel())
+        .toList()
+      ..sort((a, b) => a.time.compareTo(b.time));
+  }
+
+  Future<void> removeMedicationSchedule(String scheduleId) async {
+    final box = Hive.box(_medicationSchedulesBox);
+    await box.delete(scheduleId);
+  }
+
+  Future<void> clearMedicationSchedules() async {
+    final box = Hive.box(_medicationSchedulesBox);
+    await box.clear();
+  }
+
   // --- Batch Operations ---
 
   /// Clear all data (for app reset)
@@ -181,6 +290,9 @@ class LocalStorageService {
     await clearUser();
     await clearMealLogs();
     await clearActivityLogs();
+    await clearMedications();
+    await clearMedicationLogs();
+    await clearMedicationSchedules();
   }
 
   /// Get total storage size (approximate, in bytes)
@@ -190,6 +302,9 @@ class LocalStorageService {
     totalSize += Hive.box(_userBox).length;
     totalSize += Hive.box(_mealsBox).length;
     totalSize += Hive.box(_activitiesBox).length;
+    totalSize += Hive.box(_medicationsBox).length;
+    totalSize += Hive.box(_medicationLogsBox).length;
+    totalSize += Hive.box(_medicationSchedulesBox).length;
     return totalSize;
   }
 
@@ -199,5 +314,8 @@ class LocalStorageService {
     await Hive.box(_userBox).compact();
     await Hive.box(_mealsBox).compact();
     await Hive.box(_activitiesBox).compact();
+    await Hive.box(_medicationsBox).compact();
+    await Hive.box(_medicationLogsBox).compact();
+    await Hive.box(_medicationSchedulesBox).compact();
   }
 }

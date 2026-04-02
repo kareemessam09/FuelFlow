@@ -5,3 +5,4 @@ export 'analytics_repository.dart';
 export 'favorites_repository.dart';
 export 'users_repository.dart';
 export 'goals_repository.dart';
+export 'medication_repository.dart';
