@@ -1,5 +1,9 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateFavoriteDto, CreateTemplateDto, CreateCustomFoodDto } from './create-favorite.dto';
+import {
+  CreateFavoriteDto,
+  CreateTemplateDto,
+  CreateCustomFoodDto,
+} from './create-favorite.dto';
 
 export class UpdateFavoriteDto extends PartialType(CreateFavoriteDto) {}
 

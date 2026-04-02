@@ -169,7 +169,9 @@ export class AuthService {
     }
 
     const resetToken = randomBytes(24).toString('hex');
-    const resetTokenHash = createHash('sha256').update(resetToken).digest('hex');
+    const resetTokenHash = createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
     const tokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
     await this.prisma.notification.create({
       data: {
@@ -220,9 +222,8 @@ export class AuthService {
       used?: boolean;
     };
     const storedHash = resetData.tokenHash;
-    const expiresAt = resetData.expiresAt != null
-      ? new Date(resetData.expiresAt)
-      : new Date(0);
+    const expiresAt =
+      resetData.expiresAt != null ? new Date(resetData.expiresAt) : new Date(0);
     if (!storedHash || resetData.used == true) {
       throw new UnauthorizedException('Reset token already used or invalid');
     }
@@ -256,7 +257,11 @@ export class AuthService {
     return { message: 'Password reset successfully' };
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid user account');

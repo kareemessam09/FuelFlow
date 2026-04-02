@@ -39,7 +39,11 @@ export class AuthController {
   @Post('reset-password')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto.email, dto.token, dto.newPassword);
+    return this.authService.resetPassword(
+      dto.email,
+      dto.token,
+      dto.newPassword,
+    );
   }
 
   @Post('google')

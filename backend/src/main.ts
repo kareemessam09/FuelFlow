@@ -10,8 +10,9 @@ async function bootstrap() {
 
   // Enable CORS for Flutter mobile app
   const corsOrigins =
-    process.env.CORS_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) ??
-    [];
+    process.env.CORS_ORIGINS?.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? [];
 
   app.enableCors({
     origin: (
@@ -40,7 +41,10 @@ async function bootstrap() {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=()',
+    );
     next();
   });
 

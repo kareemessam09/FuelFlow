@@ -1,7 +1,18 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCustomActivityDto, CreateActivityGoalDto } from './dto/create-custom-activity.dto';
-import { UpdateCustomActivityDto, UpdateActivityGoalDto } from './dto/update-custom-activity.dto';
+import {
+  CreateCustomActivityDto,
+  CreateActivityGoalDto,
+} from './dto/create-custom-activity.dto';
+import {
+  UpdateCustomActivityDto,
+  UpdateActivityGoalDto,
+} from './dto/update-custom-activity.dto';
 
 @Injectable()
 export class CustomActivitiesService {
@@ -47,9 +58,13 @@ export class CustomActivitiesService {
     return activity;
   }
 
-  async updateCustomActivity(userId: string, id: number, dto: UpdateCustomActivityDto) {
+  async updateCustomActivity(
+    userId: string,
+    id: number,
+    dto: UpdateCustomActivityDto,
+  ) {
     await this.getCustomActivity(userId, id); // Check ownership
-    
+
     // Check for duplicate name if name is being updated
     if (dto.name) {
       const existing = await this.prisma.customActivity.findFirst({
@@ -78,33 +93,66 @@ export class CustomActivitiesService {
    */
   async getAllActivities(userId: string) {
     const customActivities = await this.getCustomActivities(userId);
-    
+
     // Built-in activities
     const builtInActivities = [
-      { name: 'Resting', multiplier: 1.0, icon: '😴', description: 'Sleeping or relaxing', isBuiltIn: true },
-      { name: 'Coding', multiplier: 1.3, icon: '💻', description: 'Mental work, sitting', isBuiltIn: true },
-      { name: 'Studying', multiplier: 1.6, icon: '📚', description: 'Reading, learning', isBuiltIn: true },
-      { name: 'GymStrength', multiplier: 3.5, icon: '🏋️', description: 'Weightlifting', isBuiltIn: true },
-      { name: 'GymCardio', multiplier: 5.0, icon: '🏃', description: 'Running, intense cardio', isBuiltIn: true },
+      {
+        name: 'Resting',
+        multiplier: 1.0,
+        icon: '😴',
+        description: 'Sleeping or relaxing',
+        isBuiltIn: true,
+      },
+      {
+        name: 'Coding',
+        multiplier: 1.3,
+        icon: '💻',
+        description: 'Mental work, sitting',
+        isBuiltIn: true,
+      },
+      {
+        name: 'Studying',
+        multiplier: 1.6,
+        icon: '📚',
+        description: 'Reading, learning',
+        isBuiltIn: true,
+      },
+      {
+        name: 'GymStrength',
+        multiplier: 3.5,
+        icon: '🏋️',
+        description: 'Weightlifting',
+        isBuiltIn: true,
+      },
+      {
+        name: 'GymCardio',
+        multiplier: 5.0,
+        icon: '🏃',
+        description: 'Running, intense cardio',
+        isBuiltIn: true,
+      },
     ];
 
     return {
       builtIn: builtInActivities,
-      custom: customActivities.map(a => ({ ...a, isBuiltIn: false })),
+      custom: customActivities.map((a) => ({ ...a, isBuiltIn: false })),
     };
   }
 
   /**
    * Get multiplier for an activity (built-in or custom)
    */
-  async getMultiplierForActivity(userId: string, activityName: string): Promise<number> {
+  async getMultiplierForActivity(
+    userId: string,
+    activityName: string,
+  ): Promise<number> {
     // Check built-in activities first
     const builtInMultipliers: Record<string, number> = {
-      'Resting': 1.0,
-      'Coding': 1.3,
-      'Studying': 1.6,
-      'GymStrength': 3.5,
-      'GymCardio': 5.0,
+      Resting: 1.0,
+      Coding: 1.3,
+      Studying: 1.6,
+      GymStrength: 3.5,
+      GymCardio: 5.0,
     };
 
     if (builtInMultipliers[activityName] !== undefined) {
@@ -134,7 +182,9 @@ export class CustomActivitiesService {
       where: { userId, activityType: dto.activityType, period: dto.period },
     });
     if (existing) {
-      throw new ConflictException('Goal for this activity and period already exists');
+      throw new ConflictException(
+        'Goal for this activity and period already exists',
+      );
     }
 
     return this.prisma.activityGoal.create({
@@ -162,7 +212,11 @@ export class CustomActivitiesService {
     return goal;
   }
 
-  async updateActivityGoal(userId: string, id: number, dto: UpdateActivityGoalDto) {
+  async updateActivityGoal(
+    userId: string,
+    id: number,
+    dto: UpdateActivityGoalDto,
+  ) {
     await this.getActivityGoal(userId, id); // Check ownership
     return this.prisma.activityGoal.update({
       where: { id },
@@ -186,7 +240,7 @@ export class CustomActivitiesService {
 
     const progressPromises = goals.map(async (goal) => {
       let startDate: Date;
-      
+
       if (goal.period === 'daily') {
         startDate = new Date(now);
         startDate.setHours(0, 0, 0, 0);
@@ -210,14 +264,18 @@ export class CustomActivitiesService {
       let totalMinutes = 0;
       for (const activity of activities) {
         const endTime = activity.endTime || now;
-        totalMinutes += (endTime.getTime() - activity.startTime.getTime()) / (1000 * 60);
+        totalMinutes +=
+          (endTime.getTime() - activity.startTime.getTime()) / (1000 * 60);
       }
 
       return {
         goal,
         currentMinutes: Math.round(totalMinutes),
         targetMinutes: goal.targetMinutes,
-        progressPercent: Math.min(100, Math.round((totalMinutes / goal.targetMinutes) * 100)),
+        progressPercent: Math.min(
+          100,
+          Math.round((totalMinutes / goal.targetMinutes) * 100),
+        ),
         isComplete: totalMinutes >= goal.targetMinutes,
       };
     });

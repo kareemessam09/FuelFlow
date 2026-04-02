@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -51,7 +45,11 @@ export class AnalyticsController {
     const numDays = days ? parseInt(days, 10) : 7;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - numDays);
-    return this.analyticsService.getMealStats(user.userId, startDate, new Date());
+    return this.analyticsService.getMealStats(
+      user.userId,
+      startDate,
+      new Date(),
+    );
   }
 
   /**
@@ -65,7 +63,11 @@ export class AnalyticsController {
     const numDays = days ? parseInt(days, 10) : 7;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - numDays);
-    return this.analyticsService.getActivityStats(user.userId, startDate, new Date());
+    return this.analyticsService.getActivityStats(
+      user.userId,
+      startDate,
+      new Date(),
+    );
   }
 
   /**
@@ -98,7 +100,10 @@ export class AnalyticsController {
   ) {
     const data = await this.analyticsService.exportMealsCSV(user.userId);
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=fuelflow-meals.csv');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=fuelflow-meals.csv',
+    );
     res.send(data.csv);
   }
 
@@ -112,7 +117,10 @@ export class AnalyticsController {
   ) {
     const data = await this.analyticsService.exportActivitiesCSV(user.userId);
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=fuelflow-activities.csv');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=fuelflow-activities.csv',
+    );
     res.send(data.csv);
   }
 }

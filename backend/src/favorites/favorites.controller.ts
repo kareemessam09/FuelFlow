@@ -16,8 +16,16 @@ import { FavoritesService } from './favorites.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '../auth/decorators/current-user.decorator';
-import { CreateFavoriteDto, CreateTemplateDto, CreateCustomFoodDto } from './dto/create-favorite.dto';
-import { UpdateFavoriteDto, UpdateTemplateDto, UpdateCustomFoodDto } from './dto/update-favorite.dto';
+import {
+  CreateFavoriteDto,
+  CreateTemplateDto,
+  CreateCustomFoodDto,
+} from './dto/create-favorite.dto';
+import {
+  UpdateFavoriteDto,
+  UpdateTemplateDto,
+  UpdateCustomFoodDto,
+} from './dto/update-favorite.dto';
 
 @Controller('favorites')
 @UseGuards(JwtAuthGuard)
@@ -184,7 +192,11 @@ export class FavoritesController {
     @Query('servings') servings?: string,
   ) {
     const servingCount = servings ? parseFloat(servings) : 1;
-    return this.favoritesService.createMealFromCustomFood(user.userId, id, servingCount);
+    return this.favoritesService.createMealFromCustomFood(
+      user.userId,
+      id,
+      servingCount,
+    );
   }
 
   // ============================================
