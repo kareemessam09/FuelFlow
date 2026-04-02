@@ -2,8 +2,12 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeminiService } from '../gemini/gemini.service';
 import { EnergyService } from '../energy/energy.service';
-import { CreateMealManualDto, MealResponseDto, UpdateMealDto } from './dto/create-meal.dto';
-import { ActivityMode } from '../energy/energy.constants';
+import { MedicationsService } from '../medications/medications.service';
+import {
+  CreateMealManualDto,
+  MealResponseDto,
+  UpdateMealDto,
+} from './dto/create-meal.dto';
 
 @Injectable()
 export class MealsService {
@@ -13,6 +17,7 @@ export class MealsService {
     private readonly prisma: PrismaService,
     private readonly geminiService: GeminiService,
     private readonly energyService: EnergyService,
+    private readonly medicationsService: MedicationsService,
   ) {}
 
   /**
@@ -81,6 +86,13 @@ export class MealsService {
       multiplier,
     );
 
+    // Schedule post-meal medication reminders
+    await this.schedulePostMealMedicationReminders(
+      userId,
+      meal.id,
+      meal.category,
+    );
+
     return {
       ...meal,
       energyState,
@@ -140,6 +152,13 @@ export class MealsService {
       newVolume,
       dto.absorptionRate,
       multiplier,
+    );
+
+    // Schedule post-meal medication reminders
+    await this.schedulePostMealMedicationReminders(
+      dto.userId,
+      meal.id,
+      meal.category,
     );
 
     return {
@@ -334,5 +353,51 @@ export class MealsService {
       },
       orderBy: { startTime: 'desc' },
     });
+  }
+
+  /**
+   * Schedule post-meal medication reminders
+   * Schedules notifications for medications that should be taken after a meal
+   */
+  private async schedulePostMealMedicationReminders(
+    userId: string,
+    mealId: number,
+    mealType: string,
+  ): Promise<void> {
+    try {
+      const medications =
+        await this.medicationsService.getRequiredAfterMeal(userId, mealType);
+
+      if (medications.length === 0) return;
+
+      // Schedule reminders 30 minutes after meal
+      const reminderTime = new Date(Date.now() + 30 * 60 * 1000);
+
+      for (const medication of medications) {
+        await this.prisma.notification.create({
+          data: {
+            userId,
+            type: 'medication_reminder',
+            title: '💊 Medication Reminder',
+            body: `Time to take ${medication.name}${medication.dosage ? ` (${medication.dosage})` : ''} after your meal`,
+            status: 'scheduled',
+            scheduledFor: reminderTime,
+            data: {
+              medicationId: medication.id,
+              medicationName: medication.name,
+              mealId,
+              timing: 'after',
+              action: 'log_medication',
+            },
+          },
+        });
+      }
+
+      this.logger.log(
+        `Scheduled ${medications.length} post-meal medication reminders for user ${userId}`,
+      );
+    } catch (error) {
+      this.logger.error('Error scheduling post-meal medication reminders', error);
+    }
   }
 }
