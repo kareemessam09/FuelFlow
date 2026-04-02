@@ -1,167 +1,76 @@
-# FuelFlow
+This master specification document outlines the complete feature set for **FuelFlow**, a high-performance metabolic management system designed to prevent energy crashes through proactive modeling and AI.
 
-FuelFlow is a full-stack mobile product for tracking energy state from meals + activity.
+---
 
-It includes:
+# FuelFlow: Project Master Specification
 
-- `app/FuelFlow` — Flutter mobile client
-- `backend` — NestJS API (Prisma + PostgreSQL)
+## 1. Visual Identity & UX (The Swiss-Minimalist Aesthetic)
+The application follows a strict **High-Contrast Minimalism** style to distinguish itself from generic AI-generated interfaces.
+* **Palette:** Pure Black (`#000000`), Pure White (`#FFFFFF`), and minimal Grey shades for structural borders.
+* **Typography:** Space Grotesk for headers and Roboto Mono for data-heavy metrics and timers.
+* **Grid System:** Brutalist, 1px/2px solid borders, and sharp 4px radii instead of over-rounded corners.
+* **Visual Texture:** The "Stomach Balloon" uses stroke weight and patterns (solid, dotted, slashed) instead of colors to indicate status.
 
-The app supports onboarding, auth, meal capture/manual logging, activity toggling, analytics, favorites, goals, push notifications, and production-oriented security defaults.
+---
 
-## Theme palette
+## 2. The Core Engine: Metabolic Decay Logic
+The system treats the stomach as a dynamic fuel tank where volume decreases based on biological and cognitive load.
+* **The Formula:** $V_{remaining} = V_{start} - (R_{base} \times G_{index} \times M_{activity} \times \Delta t)$.
+* **Normalization:** $G_{index}$ (Glycemic Index) is standardized between $0.01$ and $1.0$.
+* **Base Metabolic Rate ($R_{base}$):** Set at $0.5\%$ per minute.
+* **Activity Multipliers ($M_{activity}$):**
+    * Resting: $1.0x$
+    * Coding: $1.3x$
+    * Studying: $1.6x$
+    * Gym (Strength): $3.5x$
+    * Gym (Cardio): $5.0x$
 
-The UI is built around this required palette:
+---
 
-- `#B21235` (primary red)
-- `#FFF66B` (accent yellow)
-- `#FF5672` (secondary pink)
-- `#149BCC` (cyan)
-- `#0985B2` (teal)
+## 3. Multimodal Fuel Logging (Snap & Fuel)
+A hybrid input system that utilizes Gemini 1.5 Flash for instant metabolic analysis.
+* **Image Analysis:** Users snap a photo; the AI identifies food items, estimates volume, and assigns a $G_{index}$.
+* **Natural Language Input:** Users can type descriptions (e.g., "Two eggs and brown toast") which are processed by the same AI pipeline.
+* **Weighted GI Average:** If multiple meals are consumed, the system calculates an effective GI based on the remaining volume of overlapping meals.
 
-## Repository structure
+---
 
-```text
-FuelFlow/
-├─ app/FuelFlow/                 # Flutter app
-│  ├─ lib/                       # app code
-│  ├─ android/                   # Android project
-│  ├─ ios/                       # iOS project
-│  └─ test/                      # Flutter tests
-├─ backend/                      # NestJS API
-│  ├─ src/                       # modules/services/controllers
-│  ├─ prisma/                    # schema + migrations
-│  └─ test/                      # backend tests
-└─ .github/workflows/ci.yml      # CI + APK release workflow
-```
+## 4. Contextual Medication Tracking
+Medication management is directly linked to the eating cycle to ensure safety and stability.
+* **Meal-Relation Logic:** Medications are categorized as "Before" or "After" specific meals (Breakfast, Lunch, Dinner, or Any).
+* **Contextual Intercepts:**
+    * **Pre-Meal:** If a "Before" med is required, the app blocks the meal log until the medication is confirmed.
+    * **Post-Meal:** Automatically schedules a reminder 30 minutes after a meal log is completed.
+* **Relational Logs:** Every `MedicationLog` is optionally linked to a specific `MealId` for long-term stability analysis.
 
-## Local setup
+---
 
-### Prerequisites
+## 5. Performance & Sync Architecture (Zero-Drift)
+Designed for high efficiency and O(1) performance at scale.
+* **EnergySnapshots:** The backend saves snapshots after every event (meal/activity) to prevent re-calculating the entire history on every poll.
+* **Zero-Drift Sync:** The Flutter client resets its `_lastDecayReferenceTime` after every server sync to prevent "volume jumps".
+* **App Resumption:** On resume, the BLoC applies offline decay for instant UI feedback followed by an immediate server reconciliation.
 
-- Flutter stable (Dart `3.10.x`)
-- Node.js `20+`
-- PostgreSQL `14+`
-- Optional: Firebase project (push notifications)
-- Optional: Gemini API key (image meal analysis)
+---
 
-### Backend boot
+## 6. Proactive Safety & Notifications
+* **Threshold States:** Optimal ($>60\%$), Warning ($30-60\%$), and Critical ($<30\%$).
+* **AlertTime Calculation:** The backend returns a precise `alertTime` for background notifications, predicting exactly when the user will hit the $30\%$ "Crash Zone" based on their current activity.
+* **Critical UI:** A pulsing B&W strobe effect or inverted colors when the balloon reaches the Critical state.
 
-```bash
-cd backend
-npm install
-cp .env.example .env
-npx prisma migrate dev
-npm run start:dev
-```
+---
 
-API base: `http://localhost:3000/api`
+## 7. Technical Stack
+* **Frontend:** Flutter (BLoC state management, Layer-first architecture).
+* **Backend:** Node.js/NestJS.
+* **Database:** PostgreSQL with Prisma ORM (Compound indexes on `userId` and `createdAt`).
+* **AI:** Multimodal Gemini 1.5 Flash.
 
-Health check: `GET http://localhost:3000/api/health`
 
-### App boot
 
-```bash
-cd app/FuelFlow
-flutter pub get
-flutter run
-```
+[Image of the human digestive system]
 
-Make sure app API config points to your backend host/IP (especially on a real device).
 
-## Core product flows
+This configuration supports the unique health needs of kimo, a final-year CS student at Suez Canal University working on the Studyfy graduation project.
 
-- Register/login (email-password + Google auth backend support)
-- Forgot/reset password (generic secure response + SMTP delivery when configured)
-- Onboarding (first-run gated)
-- Energy dashboard (live state, thresholds, timers)
-- Meals:
-  - AI Snap (image upload + Gemini analysis)
-  - Manual meal logging
-- Activity:
-  - mode switching (resting/studying/coding/gym)
-  - live energy decay effect
-- Favorites/templates/custom foods
-- Analytics and goal progress
-- Notifications:
-  - local + FCM handling
-  - FCM token sync to backend
-
-## CI/CD
-
-Workflow file: `.github/workflows/ci.yml`
-
-### CI checks
-
-On push/PR:
-
-- Backend: install, build, tests
-- Flutter: `flutter pub get`, analyze, tests
-
-### APK release automation
-
-On tag push matching `v*` (example `v1.0.1`):
-
-- Build release APKs split per ABI (smaller downloads)
-- Create/update GitHub Release
-- Upload:
-  - `app/FuelFlow/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
-  - `app/FuelFlow/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`
-  - `app/FuelFlow/build/app/outputs/flutter-apk/app-x86_64-release.apk`
-
-To publish a release:
-
-```bash
-git tag v1.0.2
-git push origin v1.0.2
-```
-
-### Required GitHub secret for release APK
-
-The release job expects this repository secret:
-
-- `FIREBASE_ANDROID_GOOGLE_SERVICES_JSON_B64`
-
-How to set it:
-
-1. Convert your `app/FuelFlow/android/app/google-services.json` to base64
-2. Go to GitHub repo → **Settings** → **Secrets and variables** → **Actions**
-3. Add a new repository secret with that exact name
-
-Example encoding command:
-
-```bash
-base64 -w 0 app/FuelFlow/android/app/google-services.json
-```
-
-If the secret is missing, release workflow fails fast with a clear message.
-
-## Security and secrets
-
-- Firebase config files are intentionally ignored:
-  - `app/FuelFlow/android/app/google-services.json`
-  - `app/FuelFlow/google-services.json`
-  - `app/FuelFlow/ios/Runner/GoogleService-Info.plist`
-- `firebase_options.dart` should not contain real production keys in shared/public repos.
-- If a key was ever committed, rotate it in Firebase/Google Cloud.
-- Backend protections include:
-  - rate limiting (throttler)
-  - strict validation
-  - CORS allowlist in production
-  - safer forgot-password behavior (no account enumeration)
-
-## Production readiness checklist
-
-- [ ] Configure strong `JWT_SECRET`
-- [ ] Configure `DATABASE_URL`
-- [ ] Set production `CORS_ORIGINS`
-- [ ] Configure SMTP credentials for reset emails
-- [ ] Add private Firebase config per environment
-- [ ] Protect default branch with required checks
-- [ ] Monitor `/api/health` and errors
-- [ ] Keep rollback path for previous backend + app release
-
-## Detailed docs
-
-- Backend details and endpoint overview: `backend/README.md`
-- App architecture, integration, and release build notes: `app/FuelFlow/README.md`
+How would you like to handle the "Offline-First" sync queue for those moments when you lose connection during a gym session?
