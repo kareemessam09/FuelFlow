@@ -13,6 +13,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { CustomActivitiesModule } from './custom-activities/custom-activities.module';
+import { MedicationsModule } from './medications/medications.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -37,6 +38,7 @@ import { APP_GUARD } from '@nestjs/core';
     AnalyticsModule,
     FavoritesModule,
     CustomActivitiesModule,
+    MedicationsModule,
     JobsModule,
   ],
   controllers: [AppController],
