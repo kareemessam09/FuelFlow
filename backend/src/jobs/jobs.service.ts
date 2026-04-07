@@ -7,6 +7,15 @@ import { MedicationsService } from '../medications/medications.service';
 @Injectable()
 export class JobsService {
   private readonly logger = new Logger(JobsService.name);
+  private static readonly WEEKDAY_TO_ISO_DAY: Record<string, number> = {
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+    Sun: 7,
+  };
 
   constructor(
     private prisma: PrismaService,
@@ -317,12 +326,6 @@ export class JobsService {
 
     try {
       const now = new Date();
-      const currentDay = now.getDay() === 0 ? 7 : now.getDay(); // Convert Sunday=0 to 7
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-
-      // Get current time in HH:MM format
-      const currentTime = `${currentHour.toString().padStart(2, '0')}:${Math.floor(currentMinute / 15) * 15}`;
 
       // Find all enabled schedules for current day and time window
       const schedules = await this.prisma.medicationSchedule.findMany({
@@ -342,16 +345,19 @@ export class JobsService {
       });
 
       for (const schedule of schedules) {
+        const { day: currentDay, roundedTime: currentTime } =
+          this.getUserLocalContext(now, schedule.user.timezone ?? undefined);
+
         // Check if current day is in schedule
-        const scheduledDays = schedule.daysOfWeek.split(',').map(Number);
+        const scheduledDays = schedule.daysOfWeek
+          .split(',')
+          .map((value) => Number(value.trim()))
+          .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7);
         if (!scheduledDays.includes(currentDay)) continue;
 
         // Check if time matches (within 15-minute window)
-        const scheduleTime = schedule.time;
-        const [schedHour, schedMin] = scheduleTime.split(':').map(Number);
-        const schedMinRounded = Math.floor(schedMin / 15) * 15;
-        const schedTimeRounded = `${schedHour.toString().padStart(2, '0')}:${schedMinRounded.toString().padStart(2, '0')}`;
-
+        const schedTimeRounded = this.getScheduleQuarterHour(schedule.time);
+        if (!schedTimeRounded) continue;
         if (schedTimeRounded !== currentTime) continue;
 
         // Check if already sent in last 2 hours to avoid duplicates
@@ -415,8 +421,8 @@ export class JobsService {
         try {
           if (notification.user.fcmToken) {
             await this.notificationsService.sendToToken(
-              notification.user.fcmToken,
               notification.userId,
+              notification.user.fcmToken,
               {
                 title: notification.title,
                 body: notification.body,
@@ -463,6 +469,74 @@ export class JobsService {
       }
     } catch (error) {
       this.logger.error('Error processing scheduled notifications', error);
+    }
+  }
+
+  private getScheduleQuarterHour(time: string): string | null {
+    const [hourRaw, minuteRaw] = time.split(':');
+    const hour = Number(hourRaw);
+    const minute = Number(minuteRaw);
+
+    if (
+      !Number.isInteger(hour) ||
+      !Number.isInteger(minute) ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      this.logger.warn(`Invalid medication schedule time format: "${time}"`);
+      return null;
+    }
+
+    return this.getRoundedQuarterHour(hour, minute);
+  }
+
+  private getRoundedQuarterHour(hour: number, minute: number): string {
+    const roundedMinute = Math.floor(minute / 15) * 15;
+    return `${hour.toString().padStart(2, '0')}:${roundedMinute.toString().padStart(2, '0')}`;
+  }
+
+  private getUserLocalContext(
+    now: Date,
+    timezone?: string,
+  ): { day: number; roundedTime: string } {
+    const safeTimezone = timezone?.trim() || 'UTC';
+
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: safeTimezone,
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      const parts = formatter.formatToParts(now);
+
+      const weekday = parts.find((part) => part.type === 'weekday')?.value;
+      const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+      const minute = Number(parts.find((part) => part.type === 'minute')?.value);
+
+      if (!Number.isInteger(hour) || !Number.isInteger(minute)) {
+        throw new Error(
+          `Could not parse hour/minute for timezone "${safeTimezone}"`,
+        );
+      }
+
+      const day = JobsService.WEEKDAY_TO_ISO_DAY[weekday ?? ''] ?? 1;
+      return {
+        day,
+        roundedTime: this.getRoundedQuarterHour(hour, minute),
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Falling back to server time for timezone "${safeTimezone}"`,
+      );
+      const fallbackDay = now.getDay() === 0 ? 7 : now.getDay();
+      return {
+        day: fallbackDay,
+        roundedTime: this.getRoundedQuarterHour(now.getHours(), now.getMinutes()),
+      };
     }
   }
 }

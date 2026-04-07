@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeminiService } from '../gemini/gemini.service';
 import { EnergyService } from '../energy/energy.service';
 import { MedicationsService } from '../medications/medications.service';
+import { AbsorptionProfile } from '../energy/energy.constants';
 import {
   CreateMealManualDto,
   MealResponseDto,
@@ -38,6 +44,12 @@ export class MealsService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
+    const inferredMealCategory = this.inferMealCategory(user.timezone);
+    await this.ensureBeforeMealMedicationsTaken(
+      userId,
+      this.normalizeMealTypeForMedication(inferredMealCategory),
+    );
+
     // Analyze the food image with Gemini
     const analysis = await this.geminiService.analyzeFoodImage(
       imageBuffer,
@@ -72,6 +84,7 @@ export class MealsService {
         absorptionProfile: analysis.absorptionProfile,
         estimatedSatiety: analysis.estimatedSatietyMinutes,
         imageUrl: null, // Could store in cloud storage if needed
+        category: inferredMealCategory,
       },
     });
 
@@ -116,6 +129,14 @@ export class MealsService {
       throw new NotFoundException(`User with ID ${dto.userId} not found`);
     }
 
+    await this.ensureBeforeMealMedicationsTaken(
+      dto.userId,
+      this.normalizeMealTypeForMedication(dto.category),
+    );
+
+    const absorptionProfile =
+      dto.absorptionProfile ?? AbsorptionProfile.BALANCED;
+
     // Get current energy state
     const currentState = await this.calculateCurrentEnergyState(dto.userId);
 
@@ -125,7 +146,7 @@ export class MealsService {
       {
         fullnessVolume: dto.fullnessVolume,
         glycemicIndex: dto.absorptionRate,
-        absorptionProfile: dto.absorptionProfile!,
+        absorptionProfile,
         estimatedSatiety: dto.estimatedSatiety,
       },
     );
@@ -137,9 +158,14 @@ export class MealsService {
         foodName: dto.foodName,
         fullnessVolume: dto.fullnessVolume,
         absorptionRate: dto.absorptionRate,
-        absorptionProfile: dto.absorptionProfile ?? 'Balanced',
+        absorptionProfile,
         estimatedSatiety: dto.estimatedSatiety,
         imageUrl: dto.imageUrl,
+        category: dto.category ?? 'other',
+        calories: dto.calories,
+        protein: dto.protein,
+        carbs: dto.carbs,
+        fat: dto.fat,
       },
     });
 
@@ -165,6 +191,66 @@ export class MealsService {
       ...meal,
       energyState,
     };
+  }
+
+  private async ensureBeforeMealMedicationsTaken(
+    userId: string,
+    mealType: string,
+  ): Promise<void> {
+    const requiredMeds = await this.medicationsService.getRequiredBeforeMeal(
+      userId,
+      mealType,
+    );
+
+    if (requiredMeds.length === 0) {
+      return;
+    }
+
+    const medicationNames = requiredMeds.map((med) => med.name).join(', ');
+    throw new ForbiddenException(
+      `Please take required medications before logging this meal: ${medicationNames}`,
+    );
+  }
+
+  private normalizeMealTypeForMedication(category?: string): string {
+    const normalized = (category ?? '').toLowerCase();
+    if (normalized === 'breakfast' || normalized === 'lunch' || normalized === 'dinner') {
+      return normalized;
+    }
+    return 'any';
+  }
+
+  private inferMealCategory(timezone?: string): string {
+    const now = new Date();
+    const localHour = this.resolveUserHour(now, timezone);
+
+    if (localHour >= 5 && localHour < 11) return 'breakfast';
+    if (localHour >= 11 && localHour < 16) return 'lunch';
+    if (localHour >= 16 && localHour < 23) return 'dinner';
+    return 'other';
+  }
+
+  private resolveUserHour(date: Date, timezone?: string): number {
+    const safeTimezone = timezone?.trim() || 'UTC';
+
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: safeTimezone,
+        hour: '2-digit',
+        hour12: false,
+      });
+      const parts = formatter.formatToParts(date);
+      const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+      if (Number.isInteger(hour) && hour >= 0 && hour <= 23) {
+        return hour;
+      }
+      throw new Error('Failed to parse local hour');
+    } catch {
+      this.logger.warn(
+        `Invalid or unsupported timezone "${safeTimezone}". Using server hour.`,
+      );
+      return date.getHours();
+    }
   }
 
   /**
@@ -372,6 +458,7 @@ export class MealsService {
 
       // Schedule reminders 30 minutes after meal
       const reminderTime = new Date(Date.now() + 30 * 60 * 1000);
+      const normalizedMealType = this.normalizeMealTypeForMedication(mealType);
 
       for (const medication of medications) {
         await this.prisma.notification.create({
@@ -387,6 +474,7 @@ export class MealsService {
               medicationName: medication.name,
               mealId,
               timing: 'after',
+              mealType: normalizedMealType,
               action: 'log_medication',
             },
           },

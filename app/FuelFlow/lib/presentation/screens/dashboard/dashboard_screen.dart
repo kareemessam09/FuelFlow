@@ -178,12 +178,29 @@ class DashboardScreen extends StatelessWidget {
           _buildActivityIndicator(context, state),
           const SizedBox(height: 16),
 
-          // Action button
-          BrutalButton(
-            height: 60,
-            label: 'ADD FUEL',
-            icon: Icons.add_a_photo_rounded,
-            onPressed: () => context.push('/meal-capture'),
+          // Action buttons
+          Row(
+            children: [
+              Expanded(
+                child: BrutalButton(
+                  height: 60,
+                  label: 'ADD FUEL',
+                  icon: Icons.add_a_photo_rounded,
+                  onPressed: () => context.push('/meal-capture'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 132,
+                child: BrutalButton(
+                  height: 60,
+                  label: 'MEDS',
+                  icon: Icons.medication_rounded,
+                  isPrimary: false,
+                  onPressed: () => context.push('/medications'),
+                ),
+              ),
+            ],
           ),
         ],
       ),

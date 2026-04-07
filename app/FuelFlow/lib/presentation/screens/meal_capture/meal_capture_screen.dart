@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../data/models/medication_models.dart';
+import '../../../data/repositories/medication_repository.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../blocs/meal/meal.dart';
 import '../../blocs/fuel/fuel.dart';
@@ -17,6 +19,9 @@ class MealCaptureScreen extends StatefulWidget {
 
 class _MealCaptureScreenState extends State<MealCaptureScreen> {
   bool _pickerOpened = false;
+  bool _beforeMealValidated = false;
+  bool _isCheckingMeds = false;
+  final MedicationRepository _medicationRepository = MedicationRepositoryImpl();
 
   @override
   void initState() {
@@ -27,7 +32,13 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
   }
 
   Future<void> _openCamera() async {
-    if (_pickerOpened) return;
+    if (_pickerOpened || _isCheckingMeds) return;
+    if (!_beforeMealValidated) {
+      await _ensureBeforeMealMedsTaken();
+      if (!_beforeMealValidated || !mounted) {
+        return;
+      }
+    }
     _pickerOpened = true;
     final picker = ImagePicker();
     final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
@@ -39,6 +50,149 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
     } else {
       context.pop();
     }
+  }
+
+  Future<void> _ensureBeforeMealMedsTaken() async {
+    setState(() => _isCheckingMeds = true);
+    try {
+      final check = await _medicationRepository.checkBeforeMeal(
+        mealType: _inferMealType(DateTime.now()),
+      );
+      if (!mounted) return;
+      final navigator = Navigator.of(context);
+
+      if (!check.hasRequiredMedications || check.medications.isEmpty) {
+        _beforeMealValidated = true;
+        return;
+      }
+
+      final allowed = await _showBeforeMealMedicationDialog(check);
+      if (!mounted || !allowed) {
+        navigator.pop();
+        return;
+      }
+
+      _beforeMealValidated = true;
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Medication check failed: $error'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      Navigator.of(context).pop();
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingMeds = false);
+      }
+    }
+  }
+
+  Future<bool> _showBeforeMealMedicationDialog(
+    BeforeMealCheckResult check,
+  ) async {
+    final toTake = Set<String>.from(
+      check.medications.map((medication) => medication.id),
+    );
+    final taken = <String>{};
+    final now = DateTime.now();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final allChecked = taken.length == toTake.length;
+
+            return AlertDialog(
+              backgroundColor: AppColors.surface,
+              title: const Text('Take medications first'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      check.message,
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 12),
+                    ...check.medications.map((medication) {
+                      final id = medication.id;
+                      return CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: taken.contains(id),
+                        title: Text(
+                          medication.name,
+                          style: const TextStyle(color: AppColors.textPrimary),
+                        ),
+                        subtitle: medication.dosage == null
+                            ? null
+                            : Text(
+                                medication.dosage!,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                        onChanged: (value) {
+                          if (value == true) {
+                            taken.add(id);
+                          } else {
+                            taken.remove(id);
+                          }
+                          setDialogState(() {});
+                        },
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: allChecked
+                      ? () => Navigator.of(context).pop(true)
+                      : null,
+                  child: const Text('Confirm & Continue'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return false;
+    }
+
+    for (final medication in check.medications) {
+      if (!taken.contains(medication.id)) continue;
+
+      final log = MedicationLog(
+        id: '0',
+        userId: medication.userId,
+        medicationId: medication.id,
+        takenAt: now,
+        notes: 'Confirmed before meal logging in app',
+      );
+      await _medicationRepository.logMedication(log);
+    }
+
+    return true;
+  }
+
+  String _inferMealType(DateTime now) {
+    final hour = now.hour;
+    if (hour >= 5 && hour < 11) return 'breakfast';
+    if (hour >= 11 && hour < 16) return 'lunch';
+    if (hour >= 16 && hour < 23) return 'dinner';
+    return 'any';
   }
 
   @override
@@ -89,6 +243,12 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
           }
         },
         builder: (context, state) {
+          if (_isCheckingMeds) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
           if (state.status == MealCaptureStatus.initial || state.status == MealCaptureStatus.cameraReady) {
             return const Center(
               child: CircularProgressIndicator(),

@@ -124,6 +124,10 @@ class FuelFlowApp extends StatelessWidget {
         BlocProvider<FavoritesBloc>(
           create: (context) => FavoritesBloc(),
         ),
+        // MedicationBloc - Medication management
+        BlocProvider<MedicationBloc>(
+          create: (context) => MedicationBloc(),
+        ),
       ],
       child: _FuelFlowAppContent(),
     );
@@ -151,6 +155,9 @@ class _FuelFlowAppContentState extends State<_FuelFlowAppContent>
     switch (action) {
       case NotificationAction.openMealCapture:
         AppRouter.router.go('/meal-capture');
+        break;
+      case NotificationAction.openMedications:
+        AppRouter.router.go('/medications');
         break;
       case NotificationAction.openDashboard:
         AppRouter.router.go('/');

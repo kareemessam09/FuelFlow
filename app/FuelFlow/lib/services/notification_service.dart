@@ -7,6 +7,7 @@ import 'package:timezone/timezone.dart' as tz;
 enum NotificationAction {
   openDashboard,
   openMealCapture,
+  openMedications,
   none,
 }
 
@@ -36,6 +37,7 @@ class NotificationService {
   /// Payload constants for routing
   static const String _payloadDashboard = 'dashboard';
   static const String _payloadMealCapture = 'meal_capture';
+  static const String _payloadMedications = 'medications';
   static const String _defaultRemoteChannelId = 'fuelflow_alerts';
   static const String _defaultRemoteChannelName = 'FuelFlow Alerts';
 
@@ -294,6 +296,8 @@ class NotificationService {
     
     if (payload == _payloadMealCapture) {
       action = NotificationAction.openMealCapture;
+    } else if (payload == _payloadMedications) {
+      action = NotificationAction.openMedications;
     } else if (payload == _payloadDashboard) {
       action = NotificationAction.openDashboard;
     }
@@ -305,6 +309,7 @@ class NotificationService {
   NotificationAction _actionFromRemoteMessage(RemoteMessage message) {
     final payload = _payloadFromRemoteMessage(message);
     if (payload == _payloadMealCapture) return NotificationAction.openMealCapture;
+    if (payload == _payloadMedications) return NotificationAction.openMedications;
     if (payload == _payloadDashboard) return NotificationAction.openDashboard;
     return NotificationAction.none;
   }
@@ -312,6 +317,9 @@ class NotificationService {
   String _payloadFromRemoteMessage(RemoteMessage message) {
     final action = message.data['action'];
     final type = message.data['type'];
+    if (action == 'log_medication' || type == 'medication_reminder') {
+      return _payloadMedications;
+    }
     if (action == 'log_meal' || action == _payloadMealCapture || type == 'meal_reminder') {
       return _payloadMealCapture;
     }
