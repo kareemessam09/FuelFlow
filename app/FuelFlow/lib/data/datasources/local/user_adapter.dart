@@ -61,6 +61,12 @@ class UserAdapter extends HiveObject {
   @HiveField(6)
   final String units;
 
+  @HiveField(7)
+  final bool notifyOnLowEnergy;
+
+  @HiveField(8)
+  final bool notifyMealReminders;
+
   UserAdapter({
     required this.id,
     this.email,
@@ -69,6 +75,8 @@ class UserAdapter extends HiveObject {
     required this.targetGoalIndex,
     required this.createdAt,
     required this.units,
+    this.notifyOnLowEnergy = true,
+    this.notifyMealReminders = true,
   });
 
   factory UserAdapter.fromEntity(User user) {
@@ -80,6 +88,8 @@ class UserAdapter extends HiveObject {
       targetGoalIndex: user.targetGoal.index,
       createdAt: user.createdAt,
       units: user.units,
+      notifyOnLowEnergy: user.notifyOnLowEnergy,
+      notifyMealReminders: user.notifyMealReminders,
     );
   }
 
@@ -92,6 +102,8 @@ class UserAdapter extends HiveObject {
       targetGoal: TargetGoal.values[targetGoalIndex],
       units: units,
       createdAt: createdAt,
+      notifyOnLowEnergy: notifyOnLowEnergy,
+      notifyMealReminders: notifyMealReminders,
     );
   }
 }

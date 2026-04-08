@@ -27,13 +27,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize timezone data for scheduled notifications
   tz.initializeTimeZones();
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Initialize Hive for local persistence
@@ -83,7 +81,6 @@ void main() async {
 
   // Initialize notification service
   await NotificationService().initialize();
-  await NotificationService().requestPermissions();
   await NotificationService().initializeRemoteMessaging();
 
   runApp(const FuelFlowApp());
@@ -99,9 +96,9 @@ class FuelFlowApp extends StatelessWidget {
       providers: [
         // AuthBloc - Handles registration, login, and session persistence
         BlocProvider<AuthBloc>(
-          create: (context) => AuthBloc(
-            authRepository: AuthRepositoryImpl(),
-          )..add(const AuthCheckStatus()),
+          create: (context) =>
+              AuthBloc(authRepository: AuthRepositoryImpl())
+                ..add(const AuthCheckStatus()),
         ),
         // FuelBloc - Core energy state management
         BlocProvider<FuelBloc>(
@@ -113,21 +110,13 @@ class FuelFlowApp extends StatelessWidget {
               MealCaptureBloc()..add(const MealCaptureInitialize()),
         ),
         // MealsBloc - Meal history screen
-        BlocProvider<MealsBloc>(
-          create: (context) => MealsBloc(),
-        ),
+        BlocProvider<MealsBloc>(create: (context) => MealsBloc()),
         // AnalyticsBloc - Analytics screen
-        BlocProvider<AnalyticsBloc>(
-          create: (context) => AnalyticsBloc(),
-        ),
+        BlocProvider<AnalyticsBloc>(create: (context) => AnalyticsBloc()),
         // FavoritesBloc - Favorites screen
-        BlocProvider<FavoritesBloc>(
-          create: (context) => FavoritesBloc(),
-        ),
+        BlocProvider<FavoritesBloc>(create: (context) => FavoritesBloc()),
         // MedicationBloc - Medication management
-        BlocProvider<MedicationBloc>(
-          create: (context) => MedicationBloc(),
-        ),
+        BlocProvider<MedicationBloc>(create: (context) => MedicationBloc()),
       ],
       child: _FuelFlowAppContent(),
     );
@@ -145,11 +134,11 @@ class _FuelFlowAppContentState extends State<_FuelFlowAppContent>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
+
     // Set up notification tap handler for navigation
     NotificationService().onNotificationTap = _handleNotificationTap;
   }
-  
+
   void _handleNotificationTap(NotificationAction action) {
     // Use the router to navigate based on the notification action
     switch (action) {
@@ -211,9 +200,7 @@ class _FuelFlowAppContentState extends State<_FuelFlowAppContent>
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         routerConfig: AppRouter.router,
-        supportedLocales: const [
-          Locale('en'),
-        ],
+        supportedLocales: const [Locale('en'), Locale('ar')],
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
@@ -222,8 +209,8 @@ class _FuelFlowAppContentState extends State<_FuelFlowAppContent>
         builder: (context, child) {
           final mediaQuery = MediaQuery.of(context);
           final textScaler = mediaQuery.textScaler.clamp(
-            minScaleFactor: 0.9,
-            maxScaleFactor: 1.25,
+            minScaleFactor: 1.0,
+            maxScaleFactor: 2.0,
           );
           return MediaQuery(
             data: mediaQuery.copyWith(textScaler: textScaler),

@@ -41,12 +41,17 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
     }
     _pickerOpened = true;
     final picker = ImagePicker();
-    final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
-    
+    final photo = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+
     if (!mounted) return;
-    
+
     if (photo != null) {
-      context.read<MealCaptureBloc>().add(MealCaptureTakePhoto(File(photo.path)));
+      context.read<MealCaptureBloc>().add(
+        MealCaptureTakePhoto(File(photo.path)),
+      );
     } else {
       context.pop();
     }
@@ -59,7 +64,6 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
         mealType: _inferMealType(DateTime.now()),
       );
       if (!mounted) return;
-      final navigator = Navigator.of(context);
 
       if (!check.hasRequiredMedications || check.medications.isEmpty) {
         _beforeMealValidated = true;
@@ -67,8 +71,9 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
       }
 
       final allowed = await _showBeforeMealMedicationDialog(check);
-      if (!mounted || !allowed) {
-        navigator.pop();
+      if (!mounted) return;
+      if (!allowed) {
+        context.pop();
         return;
       }
 
@@ -81,7 +86,7 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
           backgroundColor: AppColors.error,
         ),
       );
-      Navigator.of(context).pop();
+      context.pop();
     } finally {
       if (mounted) {
         setState(() => _isCheckingMeds = false);
@@ -214,16 +219,21 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
           if (state.status == MealCaptureStatus.confirmed) {
             final result = state.analysisResult;
             if (result != null) {
-              context.read<FuelBloc>().add(FuelAddMeal(
-                fullnessAmount: result.estimatedFullnessPercentage,
-                glycemicIndex: result.glycemicIndex,
-                mealName: result.foodName,
-              ));
+              context.read<FuelBloc>().add(
+                FuelAddMeal(
+                  fullnessAmount: result.estimatedFullnessPercentage,
+                  glycemicIndex: result.glycemicIndex,
+                  mealName: result.foodName,
+                ),
+              );
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Row(
                     children: [
-                      const Icon(Icons.check_circle_rounded, color: Colors.white),
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.white,
+                      ),
                       const SizedBox(width: 12),
                       const Text(
                         'FUEL DEPLOYED!',
@@ -244,15 +254,12 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
         },
         builder: (context, state) {
           if (_isCheckingMeds) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
-          if (state.status == MealCaptureStatus.initial || state.status == MealCaptureStatus.cameraReady) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (state.status == MealCaptureStatus.initial ||
+              state.status == MealCaptureStatus.cameraReady) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (state.status == MealCaptureStatus.analyzing) {
@@ -293,7 +300,7 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Powered by Gemini AI',
+                    'Estimating nutrition profile…',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -305,10 +312,14 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
           }
 
           if (state.status == MealCaptureStatus.error) {
-            return _buildErrorState(state.errorMessage ?? 'UNKNOWN ERROR');
+            return _buildErrorState(
+              state.errorMessage ??
+                  'Could not analyze this meal. Try better lighting or retake the photo.',
+            );
           }
 
-          if (state.status == MealCaptureStatus.analyzed && state.analysisResult != null) {
+          if (state.status == MealCaptureStatus.analyzed &&
+              state.analysisResult != null) {
             return _buildAnalysisResult(state);
           }
 
@@ -331,7 +342,11 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
               color: AppColors.error.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.error_outline_rounded, size: 80, color: AppColors.error),
+            child: const Icon(
+              Icons.error_outline_rounded,
+              size: 80,
+              color: AppColors.error,
+            ),
           ),
           const SizedBox(height: 32),
           const Text(
@@ -348,10 +363,7 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 48),
           BrutalButton(
@@ -390,14 +402,11 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: Image.file(
-                  state.capturedImage!,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.file(state.capturedImage!, fit: BoxFit.cover),
               ),
             ),
           const SizedBox(height: 32),
-          
+
           // Food Name
           Container(
             padding: const EdgeInsets.all(20),
@@ -414,7 +423,11 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
             ),
             child: Column(
               children: [
-                const Icon(Icons.restaurant_rounded, color: Colors.white, size: 32),
+                const Icon(
+                  Icons.restaurant_rounded,
+                  color: Colors.white,
+                  size: 32,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   result.foodName.toUpperCase(),
@@ -431,7 +444,7 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Stats
           Row(
             children: [
@@ -454,7 +467,7 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
               ),
             ],
           ),
-          
+
           if (result.estimatedSatietyMinutes > 0) ...[
             const SizedBox(height: 12),
             Container(
@@ -496,9 +509,9 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
               ),
             ),
           ],
-          
+
           const SizedBox(height: 32),
-          
+
           // Action Buttons
           BrutalButton(
             label: 'Confirm',
@@ -524,7 +537,12 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

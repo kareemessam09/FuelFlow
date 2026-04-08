@@ -44,23 +44,37 @@ class AppRouter {
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     redirect: (context, state) async {
-      final isSplash = state.matchedLocation == AppRoutes.splash;
+      final currentPath = state.uri.path;
+      final isSplash = currentPath == AppRoutes.splash;
       if (isSplash) return null;
-      
+
       final isLoggedIn = AuthService().isAuthenticated;
-      final isOnboardingRoute = state.matchedLocation == AppRoutes.onboarding;
+      final isOnboardingRoute = currentPath == AppRoutes.onboarding;
       final isOnAuth =
-          state.matchedLocation == AppRoutes.login ||
-          state.matchedLocation == AppRoutes.register;
+          currentPath == AppRoutes.login || currentPath == AppRoutes.register;
       final isOnboardingDone = AuthService().isOnboardingCompleted;
 
-      if (!isOnboardingDone && !isOnboardingRoute) return AppRoutes.onboarding;
+      // If user hasn't completed onboarding and isn't on onboarding/auth routes, go to onboarding
+      if (!isOnboardingDone && !isOnboardingRoute && !isOnAuth) {
+        return AppRoutes.onboarding;
+      }
+
+      // If onboarding is done and user tries to access onboarding, redirect based on auth
       if (isOnboardingDone && isOnboardingRoute) {
         return isLoggedIn ? AppRoutes.dashboard : AppRoutes.login;
       }
 
-      if (!isLoggedIn && !isOnAuth) return AppRoutes.login;
-      if (isLoggedIn && isOnAuth) return AppRoutes.dashboard;
+      // If not logged in and not on auth/onboarding routes, go to login
+      if (!isLoggedIn && !isOnAuth && !isOnboardingRoute) {
+        return AppRoutes.login;
+      }
+
+      // If logged in and on auth routes, go to dashboard
+      if (isLoggedIn && isOnAuth) {
+        return AppRoutes.dashboard;
+      }
+
+      // Allow navigation to proceed
       return null;
     },
     routes: [
@@ -71,19 +85,6 @@ class AppRouter {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const SplashScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      ),
-
-      // Main Dashboard
-      GoRoute(
-        path: AppRoutes.dashboard,
-        name: 'dashboard',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const DashboardScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -112,13 +113,16 @@ class AppRouter {
           child: const MealCaptureScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 1),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             );
           },
@@ -134,13 +138,16 @@ class AppRouter {
           child: const MealsScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             );
           },
@@ -156,13 +163,16 @@ class AppRouter {
           child: const AnalyticsScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             );
           },
@@ -178,13 +188,16 @@ class AppRouter {
           child: const FavoritesScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             );
           },
@@ -200,13 +213,16 @@ class AppRouter {
           child: const ProfileScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             );
           },
@@ -222,13 +238,16 @@ class AppRouter {
           child: const SettingsScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             );
           },
@@ -244,15 +263,31 @@ class AppRouter {
           child: const MedicationsScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(1, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             );
+          },
+        ),
+      ),
+
+      // Main Dashboard
+      GoRoute(
+        path: AppRoutes.dashboard,
+        name: 'dashboard',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const DashboardScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
           },
         ),
       ),
@@ -261,27 +296,23 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        pageBuilder: (context, state) => const MaterialPage(
-          child: LoginScreen(),
-        ),
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: LoginScreen()),
       ),
 
       // Register
       GoRoute(
         path: AppRoutes.register,
         name: 'register',
-        pageBuilder: (context, state) => const MaterialPage(
-          child: RegisterScreen(),
-        ),
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: RegisterScreen()),
       ),
     ],
 
     errorPageBuilder: (context, state) => MaterialPage(
       key: state.pageKey,
       child: Scaffold(
-        body: Center(
-          child: Text('Page not found: ${state.uri}'),
-        ),
+        body: Center(child: Text('Page not found: ${state.uri}')),
       ),
     ),
   );

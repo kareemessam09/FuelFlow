@@ -13,9 +13,10 @@ class MealsScreen extends StatefulWidget {
   State<MealsScreen> createState() => _MealsScreenState();
 }
 
-class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStateMixin {
+class _MealsScreenState extends State<MealsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
@@ -24,7 +25,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
     // Load today's meals initially
     context.read<MealsBloc>().add(MealsLoadToday());
   }
-  
+
   void _onTabChanged() {
     if (_tabController.indexIsChanging) {
       if (_tabController.index == 0) {
@@ -34,7 +35,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
       }
     }
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -49,7 +50,13 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
         title: const Text('MEAL HISTORY'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -61,10 +68,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildTodayMeals(),
-          _buildAllMeals(),
-        ],
+        children: [_buildTodayMeals(), _buildAllMeals()],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/meal-capture'),
@@ -111,7 +115,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
       },
     );
   }
-  
+
   Widget _buildError(String message, bool isToday) {
     return Center(
       child: Column(
@@ -192,15 +196,12 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
             child: meal.imageUrl != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      meal.imageUrl!,
-                      fit: BoxFit.cover,
-                    ),
+                    child: Image.network(meal.imageUrl!, fit: BoxFit.cover),
                   )
                 : const Icon(Icons.restaurant, color: Colors.white),
           ),
           const SizedBox(width: 16),
-          
+
           // Meal info
           Expanded(
             child: Column(
@@ -226,7 +227,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
               ],
             ),
           ),
-          
+
           // Time
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -250,7 +251,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
   String _formatTime(DateTime time) {
     final now = DateTime.now();
     final diff = now.difference(time);
-    
+
     if (diff.inMinutes < 60) {
       return '${diff.inMinutes}m ago';
     } else if (diff.inHours < 24) {

@@ -38,7 +38,13 @@ class _MedicationsScreenState extends State<MedicationsScreen>
         title: const Text('MEDICATIONS'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
         ),
         actions: [
           IconButton(
@@ -113,7 +119,8 @@ class _MedicationsScreenState extends State<MedicationsScreen>
       return StateFeedback(
         icon: Icons.medication_rounded,
         title: 'No medications yet',
-        description: 'Create your first medication to enable meal-safety checks.',
+        description:
+            'Create your first medication to enable meal-safety checks.',
         actionLabel: 'ADD FIRST MEDICATION',
         onAction: _openAddMedicationDialog,
       );
@@ -124,8 +131,9 @@ class _MedicationsScreenState extends State<MedicationsScreen>
       itemCount: state.medications.length,
       itemBuilder: (context, index) {
         final medication = state.medications[index];
-        final isTakenToday = state.todayLogs
-            .any((log) => log.medicationId == medication.id);
+        final isTakenToday = state.todayLogs.any(
+          (log) => log.medicationId == medication.id,
+        );
 
         return _buildMedicationCard(
           medication: medication,
@@ -140,7 +148,8 @@ class _MedicationsScreenState extends State<MedicationsScreen>
       return const StateFeedback(
         icon: Icons.checklist_rounded,
         title: 'No logs today',
-        description: 'Medication logs will appear here once you mark doses as taken.',
+        description:
+            'Medication logs will appear here once you mark doses as taken.',
       );
     }
 
@@ -209,10 +218,12 @@ class _MedicationsScreenState extends State<MedicationsScreen>
     required Medication medication,
     required bool isTakenToday,
   }) {
-    final timingColor =
-        medication.timing == 'before' ? AppColors.primary : AppColors.primaryBlue;
-    final timingLabel =
-        medication.timing == 'before' ? 'BEFORE ${medication.mealType.toUpperCase()}' : 'AFTER ${medication.mealType.toUpperCase()}';
+    final timingColor = medication.timing == 'before'
+        ? AppColors.primary
+        : AppColors.primaryBlue;
+    final timingLabel = medication.timing == 'before'
+        ? 'BEFORE ${medication.mealType.toUpperCase()}'
+        : 'AFTER ${medication.mealType.toUpperCase()}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -239,7 +250,10 @@ class _MedicationsScreenState extends State<MedicationsScreen>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: timingColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -259,18 +273,14 @@ class _MedicationsScreenState extends State<MedicationsScreen>
           if (medication.dosage?.trim().isNotEmpty == true)
             Text(
               'Dosage: ${medication.dosage}',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-              ),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           if (medication.notes?.trim().isNotEmpty == true)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 medication.notes!,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                ),
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
             ),
           const SizedBox(height: 14),
@@ -287,10 +297,8 @@ class _MedicationsScreenState extends State<MedicationsScreen>
                       ? () {}
                       : () {
                           context.read<MedicationBloc>().add(
-                                MedicationLogTakenRequested(
-                                  medication: medication,
-                                ),
-                              );
+                            MedicationLogTakenRequested(medication: medication),
+                          );
                         },
                 ),
               ),
@@ -348,7 +356,9 @@ class _MedicationsScreenState extends State<MedicationsScreen>
 
   void _showMedicationFormDialog({Medication? existing}) {
     final nameController = TextEditingController(text: existing?.name ?? '');
-    final dosageController = TextEditingController(text: existing?.dosage ?? '');
+    final dosageController = TextEditingController(
+      text: existing?.dosage ?? '',
+    );
     final notesController = TextEditingController(text: existing?.notes ?? '');
     String timing = existing?.timing ?? 'before';
     String mealType = existing?.mealType ?? 'any';
@@ -361,7 +371,9 @@ class _MedicationsScreenState extends State<MedicationsScreen>
           builder: (context, setDialogState) {
             return AlertDialog(
               backgroundColor: AppColors.surface,
-              title: Text(existing == null ? 'Add Medication' : 'Edit Medication'),
+              title: Text(
+                existing == null ? 'Add Medication' : 'Edit Medication',
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -369,9 +381,7 @@ class _MedicationsScreenState extends State<MedicationsScreen>
                     TextField(
                       controller: nameController,
                       style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: const InputDecoration(
-                        labelText: 'Name',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Name'),
                     ),
                     const SizedBox(height: 10),
                     TextField(
@@ -385,8 +395,14 @@ class _MedicationsScreenState extends State<MedicationsScreen>
                     DropdownButtonFormField<String>(
                       initialValue: timing,
                       items: const [
-                        DropdownMenuItem(value: 'before', child: Text('Before meal')),
-                        DropdownMenuItem(value: 'after', child: Text('After meal')),
+                        DropdownMenuItem(
+                          value: 'before',
+                          child: Text('Before meal'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'after',
+                          child: Text('After meal'),
+                        ),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
@@ -399,9 +415,15 @@ class _MedicationsScreenState extends State<MedicationsScreen>
                       initialValue: mealType,
                       items: const [
                         DropdownMenuItem(value: 'any', child: Text('Any meal')),
-                        DropdownMenuItem(value: 'breakfast', child: Text('Breakfast')),
+                        DropdownMenuItem(
+                          value: 'breakfast',
+                          child: Text('Breakfast'),
+                        ),
                         DropdownMenuItem(value: 'lunch', child: Text('Lunch')),
-                        DropdownMenuItem(value: 'dinner', child: Text('Dinner')),
+                        DropdownMenuItem(
+                          value: 'dinner',
+                          child: Text('Dinner'),
+                        ),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
@@ -461,15 +483,15 @@ class _MedicationsScreenState extends State<MedicationsScreen>
 
                     if (existing == null) {
                       context.read<MedicationBloc>().add(
-                            MedicationCreateRequested(model),
-                          );
+                        MedicationCreateRequested(model),
+                      );
                     } else {
                       context.read<MedicationBloc>().add(
-                            MedicationUpdateRequested(
-                              id: existing.id,
-                              medication: model,
-                            ),
-                          );
+                        MedicationUpdateRequested(
+                          id: existing.id,
+                          medication: model,
+                        ),
+                      );
                     }
 
                     Navigator.of(context).pop();
@@ -499,9 +521,9 @@ class _MedicationsScreenState extends State<MedicationsScreen>
             ),
             TextButton(
               onPressed: () {
-                context
-                    .read<MedicationBloc>()
-                    .add(MedicationDeleteRequested(medication.id));
+                context.read<MedicationBloc>().add(
+                  MedicationDeleteRequested(medication.id),
+                );
                 Navigator.of(context).pop();
               },
               child: const Text(

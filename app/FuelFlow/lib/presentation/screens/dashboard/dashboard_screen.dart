@@ -36,9 +36,7 @@ class DashboardScreen extends StatelessWidget {
                     _buildTopSection(context, state),
 
                     // Center section - Balloon
-                    Expanded(
-                      child: _buildBalloonSection(context, state),
-                    ),
+                    Expanded(child: _buildBalloonSection(context, state)),
 
                     // Bottom section - Actions and info
                     _buildBottomSection(context, state),
@@ -82,10 +80,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   Text(
                     'Mode: ${state.currentMode.displayName}. Refuel now!',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white70,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: Colors.white70),
                   ),
                 ],
               ),
@@ -119,15 +114,17 @@ class DashboardScreen extends StatelessWidget {
                   gradient: AppColors.primaryGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.local_gas_station_rounded,
-                  color: Colors.white,
-                  size: 24,
+                child: Image.asset(
+                  'assets/images/fuelflow_icon.png',
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
                 ),
               ),
               const SizedBox(width: 12),
               ShaderMask(
-                shaderCallback: (bounds) => AppColors.primaryGradient.createShader(bounds),
+                shaderCallback: (bounds) =>
+                    AppColors.primaryGradient.createShader(bounds),
                 child: const Text(
                   'FuelFlow',
                   style: TextStyle(
@@ -159,11 +156,11 @@ class DashboardScreen extends StatelessWidget {
         fit: BoxFit.contain,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-                      child: LiquidBalloonWidget(
-                        fillPercentage: state.currentVolume,
-                        size: 280,
-                        onTap: () => _showEnergyDetails(context, state),
-                      ),
+          child: LiquidBalloonWidget(
+            fillPercentage: state.currentVolume,
+            size: 280,
+            onTap: () => _showEnergyDetails(context, state),
+          ),
         ),
       ),
     );
@@ -231,11 +228,7 @@ class DashboardScreen extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              _getIconForMode(mode),
-              color: color,
-              size: 24,
-            ),
+            Icon(_getIconForMode(mode), color: color, size: 24),
             const SizedBox(width: 12),
             Flexible(
               child: Text(
@@ -282,12 +275,12 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildBottomNav(BuildContext context) {
+    final location = GoRouterState.of(context).matchedLocation;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 1),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: SafeArea(
         child: Padding(
@@ -299,32 +292,36 @@ class DashboardScreen extends StatelessWidget {
                 context,
                 icon: Icons.home_rounded,
                 label: 'Home',
-                isActive: true,
+                isActive: location == '/',
                 onTap: () => context.go('/'),
               ),
               _buildNavItem(
                 context,
                 icon: Icons.restaurant_rounded,
                 label: 'Meals',
-                onTap: () => context.push('/meals'),
+                isActive: location == '/meals',
+                onTap: () => context.go('/meals'),
               ),
               _buildNavItem(
                 context,
                 icon: Icons.favorite_rounded,
                 label: 'Favorites',
-                onTap: () => context.push('/favorites'),
+                isActive: location == '/favorites',
+                onTap: () => context.go('/favorites'),
               ),
               _buildNavItem(
                 context,
                 icon: Icons.analytics_rounded,
                 label: 'Analytics',
-                onTap: () => context.push('/analytics'),
+                isActive: location == '/analytics',
+                onTap: () => context.go('/analytics'),
               ),
               _buildNavItem(
                 context,
                 icon: Icons.settings_rounded,
                 label: 'Settings',
-                onTap: () => context.push('/settings'),
+                isActive: location == '/settings',
+                onTap: () => context.go('/settings'),
               ),
             ],
           ),
@@ -378,7 +375,7 @@ class DashboardScreen extends StatelessWidget {
     bool isActive = false,
   }) {
     final color = isActive ? AppColors.primary : AppColors.textTertiary;
-    
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),

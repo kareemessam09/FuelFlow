@@ -45,10 +45,9 @@ class _LoginScreenState extends State<LoginScreen>
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
-      context.read<AuthBloc>().add(AuthLogin(
-            email: _emailCtrl.text.trim(),
-            password: _passwordCtrl.text,
-          ));
+      context.read<AuthBloc>().add(
+        AuthLogin(email: _emailCtrl.text.trim(), password: _passwordCtrl.text),
+      );
     }
   }
 
@@ -82,10 +81,7 @@ class _LoginScreenState extends State<LoginScreen>
             children: [
               Text(
                 'Set a new password for $email',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -102,7 +98,9 @@ class _LoginScreenState extends State<LoginScreen>
               TextField(
                 controller: confirmPasswordCtrl,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Confirm password'),
+                decoration: const InputDecoration(
+                  labelText: 'Confirm password',
+                ),
               ),
             ],
           ),
@@ -133,15 +131,17 @@ class _LoginScreenState extends State<LoginScreen>
       if (newPassword.length < 8) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password must be at least 8 characters')),
+          const SnackBar(
+            content: Text('Password must be at least 8 characters'),
+          ),
         );
         return;
       }
       if (newPassword != confirmPassword) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Passwords do not match')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
         return;
       }
 
@@ -152,13 +152,15 @@ class _LoginScreenState extends State<LoginScreen>
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password reset successfully. You can now sign in.')),
+        const SnackBar(
+          content: Text('Password reset successfully. You can now sign in.'),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to reset password: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to reset password: $e')));
     }
   }
 
@@ -177,14 +179,17 @@ class _LoginScreenState extends State<LoginScreen>
             opacity: _fadeAnim,
             child: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 40,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 32),
-                      
+
                       // Logo
                       Center(
                         child: Container(
@@ -200,17 +205,19 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.local_gas_station_rounded,
-                            color: Colors.white,
-                            size: 56,
+                          child: Image.asset(
+                            'assets/images/fuelflow_icon.png',
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
                       const SizedBox(height: 40),
-                      
+
                       ShaderMask(
-                        shaderCallback: (bounds) => AppColors.primaryGradient.createShader(bounds),
+                        shaderCallback: (bounds) =>
+                            AppColors.primaryGradient.createShader(bounds),
                         child: const Text(
                           'WELCOME BACK',
                           textAlign: TextAlign.center,
@@ -236,7 +243,8 @@ class _LoginScreenState extends State<LoginScreen>
                       const SizedBox(height: 48),
 
                       // Error banner
-                      if (state.status == AuthStatus.error && state.errorMessage != null)
+                      if (state.status == AuthStatus.error &&
+                          state.errorMessage != null)
                         Container(
                           margin: const EdgeInsets.only(bottom: 24),
                           padding: const EdgeInsets.all(16),
@@ -247,7 +255,10 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.error_outline_rounded, color: AppColors.error),
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: AppColors.error,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -277,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen>
                         },
                       ),
                       const SizedBox(height: 20),
-                      
+
                       TextFormField(
                         controller: _passwordCtrl,
                         obscureText: _obscurePassword,
@@ -291,7 +302,9 @@ class _LoginScreenState extends State<LoginScreen>
                                   ? Icons.visibility_off_rounded
                                   : Icons.visibility_rounded,
                             ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                           ),
                         ),
                         validator: (v) {
@@ -301,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen>
                         },
                       ),
                       const SizedBox(height: 12),
-                      
+
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextActionButton(
@@ -311,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
                       const SizedBox(height: 32),
-                      
+
                       BrutalButton(
                         label: 'Sign In',
                         height: 60,
@@ -319,8 +332,109 @@ class _LoginScreenState extends State<LoginScreen>
                         isLoading: state.status == AuthStatus.loading,
                         onPressed: _submit,
                       ),
+                      const SizedBox(height: 24),
+
+                      // Divider
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'OR',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Google Sign-In Button
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.3,
+                            ),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: state.status == AuthStatus.loading
+                                ? null
+                                : () {
+                                    context.read<AuthBloc>().add(
+                                      const AuthGoogleSignIn(),
+                                    );
+                                  },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (state.status == AuthStatus.loading)
+                                    SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation(
+                                          AppColors.primary,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Image.asset(
+                                      'assets/icons/google_icon.png',
+                                      width: 24,
+                                      height: 24,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(Icons.account_circle),
+                                    ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Sign in with Google',
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 16),
-                      
+
                       Center(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -392,11 +506,13 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
-      context.read<AuthBloc>().add(AuthRegister(
-            email: _emailCtrl.text.trim(),
-            password: _passwordCtrl.text,
-            name: _nameCtrl.text.trim(),
-          ));
+      context.read<AuthBloc>().add(
+        AuthRegister(
+          email: _emailCtrl.text.trim(),
+          password: _passwordCtrl.text,
+          name: _nameCtrl.text.trim(),
+        ),
+      );
     }
   }
 
@@ -415,14 +531,17 @@ class _RegisterScreenState extends State<RegisterScreen>
             opacity: _fadeAnim,
             child: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 40,
+                ),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 24),
-                      
+
                       // Logo
                       Center(
                         child: Container(
@@ -432,23 +551,27 @@ class _RegisterScreenState extends State<RegisterScreen>
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primaryBlue.withValues(alpha: 0.4),
+                                color: AppColors.primaryBlue.withValues(
+                                  alpha: 0.4,
+                                ),
                                 blurRadius: 32,
                                 offset: const Offset(0, 12),
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.local_gas_station_rounded,
-                            color: Colors.white,
-                            size: 48,
+                          child: Image.asset(
+                            'assets/images/fuelflow_icon.png',
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
                       const SizedBox(height: 32),
-                      
+
                       ShaderMask(
-                        shaderCallback: (bounds) => AppColors.accentGradient.createShader(bounds),
+                        shaderCallback: (bounds) =>
+                            AppColors.accentGradient.createShader(bounds),
                         child: const Text(
                           'CREATE ACCOUNT',
                           textAlign: TextAlign.center,
@@ -474,7 +597,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                       const SizedBox(height: 40),
 
                       // Error banner
-                      if (state.status == AuthStatus.error && state.errorMessage != null)
+                      if (state.status == AuthStatus.error &&
+                          state.errorMessage != null)
                         Container(
                           margin: const EdgeInsets.only(bottom: 24),
                           padding: const EdgeInsets.all(16),
@@ -485,7 +609,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.error_outline_rounded, color: AppColors.error),
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: AppColors.error,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -529,7 +656,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         },
                       ),
                       const SizedBox(height: 20),
-                      
+
                       TextFormField(
                         controller: _passwordCtrl,
                         obscureText: _obscurePassword,
@@ -543,12 +670,14 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   ? Icons.visibility_off_rounded
                                   : Icons.visibility_rounded,
                             ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                           ),
                         ),
                         validator: (v) {
                           if (v == null || v.isEmpty) return 'Required';
-                          if (v.length < 6) return 'Min 6 characters';
+                          if (v.length < 8) return 'Min 8 characters';
                           return null;
                         },
                       ),
@@ -567,17 +696,21 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   ? Icons.visibility_off_rounded
                                   : Icons.visibility_rounded,
                             ),
-                            onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                            onPressed: () => setState(
+                              () => _obscureConfirm = !_obscureConfirm,
+                            ),
                           ),
                         ),
                         validator: (v) {
                           if (v == null || v.isEmpty) return 'Required';
-                          if (v != _passwordCtrl.text) return 'Passwords do not match';
+                          if (v != _passwordCtrl.text) {
+                            return 'Passwords do not match';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 32),
-                      
+
                       BrutalButton(
                         label: 'Create Account',
                         height: 60,
@@ -586,8 +719,109 @@ class _RegisterScreenState extends State<RegisterScreen>
                         isLoading: state.status == AuthStatus.loading,
                         onPressed: _submit,
                       ),
+                      const SizedBox(height: 24),
+
+                      // Divider
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'OR',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Google Sign-In Button
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.3,
+                            ),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: state.status == AuthStatus.loading
+                                ? null
+                                : () {
+                                    context.read<AuthBloc>().add(
+                                      const AuthGoogleSignIn(),
+                                    );
+                                  },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (state.status == AuthStatus.loading)
+                                    SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation(
+                                          AppColors.primary,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Image.asset(
+                                      'assets/icons/google_icon.png',
+                                      width: 24,
+                                      height: 24,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(Icons.account_circle),
+                                    ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Sign up with Google',
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 16),
-                      
+
                       Center(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

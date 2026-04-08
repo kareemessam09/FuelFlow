@@ -15,10 +15,11 @@ class FavoritesScreen extends StatefulWidget {
   State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProviderStateMixin {
+class _FavoritesScreenState extends State<FavoritesScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final FavoritesRepository _repository = FavoritesRepositoryImpl();
-  
+
   @override
   void initState() {
     super.initState();
@@ -41,7 +42,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
         break;
     }
   }
-  
+
   @override
   void dispose() {
     _tabController.removeListener(_onTabChanged);
@@ -57,7 +58,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
         title: const Text('FAVORITES'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -134,8 +141,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
               final item = state.meals[index];
               return _buildFavoriteCard(
                 name: item.foodName,
-                subtitle: '${item.category} • ${item.estimatedSatiety} min satiety',
-                onTap: () => _showMessage('${item.foodName}: ${item.fullnessVolume.toStringAsFixed(0)}% fullness'),
+                subtitle:
+                    '${item.category} • ${item.estimatedSatiety} min satiety',
+                onTap: () => _showMessage(
+                  '${item.foodName}: ${item.fullnessVolume.toStringAsFixed(0)}% fullness',
+                ),
                 onLog: () => _logFavoriteMeal(item.id),
               );
             },
@@ -173,8 +183,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
               final MealTemplate item = state.templates[index];
               return _buildFavoriteCard(
                 name: item.name,
-                subtitle: '${item.foodName} • ${item.estimatedSatiety} min satiety',
-                onTap: () => _showMessage('${item.name}: ${item.description ?? 'No description'}'),
+                subtitle:
+                    '${item.foodName} • ${item.estimatedSatiety} min satiety',
+                onTap: () => _showMessage(
+                  '${item.name}: ${item.description ?? 'No description'}',
+                ),
                 onLog: () => _logTemplate(item.id),
               );
             },
@@ -212,8 +225,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
               final CustomFood item = state.foods[index];
               return _buildFavoriteCard(
                 name: item.foodName,
-                subtitle: '${item.servingSize ?? 'Custom'} • ${item.estimatedSatiety} min satiety',
-                onTap: () => _showMessage('${item.foodName}: GI ${item.absorptionRate.toStringAsFixed(0)}'),
+                subtitle:
+                    '${item.servingSize ?? 'Custom'} • ${item.estimatedSatiety} min satiety',
+                onTap: () => _showMessage(
+                  '${item.foodName}: GI ${item.absorptionRate.toStringAsFixed(0)}',
+                ),
                 onLog: () => _logCustomFood(item.id),
               );
             },
@@ -265,6 +281,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
     required String title,
     required String subtitle,
   }) {
+    final startLabel = _getAddLabel().replaceFirst('ADD ', '');
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -277,11 +295,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
                 gradient: AppColors.accentGradient,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: 64,
-                color: Colors.white,
-              ),
+              child: Icon(icon, size: 64, color: Colors.white),
             ),
             const SizedBox(height: 24),
             Text(
@@ -297,14 +311,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 32),
             BrutalButton(
-              label: 'Get Started',
+              label: startLabel,
               onPressed: () => _showAddDialog(),
               isPrimary: false,
             ),
@@ -349,10 +360,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         trailing: BrutalIconButton(
           icon: Icons.add_rounded,
@@ -413,17 +421,43 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: foodNameCtrl, decoration: const InputDecoration(labelText: 'Food name')),
-              TextField(controller: categoryCtrl, decoration: const InputDecoration(labelText: 'Category')),
-              TextField(controller: satietyCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Satiety minutes')),
-              TextField(controller: fullnessCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Fullness volume')),
-              TextField(controller: giCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Absorption rate (GI)')),
+              TextField(
+                controller: foodNameCtrl,
+                decoration: const InputDecoration(labelText: 'Food name'),
+              ),
+              TextField(
+                controller: categoryCtrl,
+                decoration: const InputDecoration(labelText: 'Category'),
+              ),
+              TextField(
+                controller: satietyCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Satiety minutes'),
+              ),
+              TextField(
+                controller: fullnessCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Fullness volume'),
+              ),
+              TextField(
+                controller: giCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Absorption rate (GI)',
+                ),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -439,7 +473,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
           absorptionRate: double.tryParse(giCtrl.text.trim()) ?? 50,
           absorptionProfile: AbsorptionProfile.balanced,
           estimatedSatiety: int.tryParse(satietyCtrl.text.trim()) ?? 120,
-          category: categoryCtrl.text.trim().isEmpty ? 'other' : categoryCtrl.text.trim(),
+          category: categoryCtrl.text.trim().isEmpty
+              ? 'other'
+              : categoryCtrl.text.trim(),
           usageCount: 0,
           createdAt: DateTime.now(),
         ),
@@ -468,17 +504,43 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Template name')),
-              TextField(controller: foodNameCtrl, decoration: const InputDecoration(labelText: 'Food name')),
-              TextField(controller: satietyCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Satiety minutes')),
-              TextField(controller: fullnessCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Fullness volume')),
-              TextField(controller: giCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Absorption rate (GI)')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Template name'),
+              ),
+              TextField(
+                controller: foodNameCtrl,
+                decoration: const InputDecoration(labelText: 'Food name'),
+              ),
+              TextField(
+                controller: satietyCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Satiety minutes'),
+              ),
+              TextField(
+                controller: fullnessCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Fullness volume'),
+              ),
+              TextField(
+                controller: giCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Absorption rate (GI)',
+                ),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -523,17 +585,43 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: foodNameCtrl, decoration: const InputDecoration(labelText: 'Food name')),
-              TextField(controller: servingCtrl, decoration: const InputDecoration(labelText: 'Serving size')),
-              TextField(controller: satietyCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Satiety minutes')),
-              TextField(controller: fullnessCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Fullness volume')),
-              TextField(controller: giCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Absorption rate (GI)')),
+              TextField(
+                controller: foodNameCtrl,
+                decoration: const InputDecoration(labelText: 'Food name'),
+              ),
+              TextField(
+                controller: servingCtrl,
+                decoration: const InputDecoration(labelText: 'Serving size'),
+              ),
+              TextField(
+                controller: satietyCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Satiety minutes'),
+              ),
+              TextField(
+                controller: fullnessCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Fullness volume'),
+              ),
+              TextField(
+                controller: giCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Absorption rate (GI)',
+                ),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -563,6 +651,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

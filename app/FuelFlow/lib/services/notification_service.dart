@@ -12,7 +12,7 @@ enum NotificationAction {
 }
 
 /// NotificationService - Handles local notifications for FuelFlow
-/// 
+///
 /// Primary use: Alert users when they hit the critical 30% threshold
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -25,7 +25,7 @@ class NotificationService {
 
   bool _isInitialized = false;
   bool _remoteMessagingInitialized = false;
-  
+
   /// Callback for handling notification taps (set by main.dart)
   void Function(NotificationAction action)? onNotificationTap;
 
@@ -33,7 +33,7 @@ class NotificationService {
   static const int _criticalAlertId = 1;
   static const int _refuelReminderId = 2;
   static const int _scheduledAlertId = 3;
-  
+
   /// Payload constants for routing
   static const String _payloadDashboard = 'dashboard';
   static const String _payloadMealCapture = 'meal_capture';
@@ -46,13 +46,15 @@ class NotificationService {
     if (_isInitialized) return;
 
     // Android initialization settings
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
 
     // iOS initialization settings
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const initSettings = InitializationSettings(
@@ -97,8 +99,10 @@ class NotificationService {
   /// Request notification permissions (iOS specific)
   Future<bool> requestPermissions() async {
     // Request permissions for iOS
-    final ios = _notifications.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final ios = _notifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     if (ios != null) {
       final granted = await ios.requestPermissions(
         alert: true,
@@ -109,8 +113,10 @@ class NotificationService {
     }
 
     // Android 13+ requires permission
-    final android = _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (android != null) {
       final granted = await android.requestNotificationsPermission();
       return granted ?? false;
@@ -191,9 +197,7 @@ class NotificationService {
   }
 
   /// Show a refuel reminder notification
-  Future<void> showRefuelReminder({
-    required int minutesSinceLastMeal,
-  }) async {
+  Future<void> showRefuelReminder({required int minutesSinceLastMeal}) async {
     const androidDetails = AndroidNotificationDetails(
       'fuel_flow_reminder',
       'Refuel Reminders',
@@ -269,7 +273,8 @@ class NotificationService {
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: null,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       payload: _payloadMealCapture, // Opens meal capture on tap
     );
   }
@@ -293,7 +298,7 @@ class NotificationService {
     // Parse payload to determine navigation action
     final payload = response.payload;
     NotificationAction action = NotificationAction.openDashboard;
-    
+
     if (payload == _payloadMealCapture) {
       action = NotificationAction.openMealCapture;
     } else if (payload == _payloadMedications) {
@@ -301,15 +306,19 @@ class NotificationService {
     } else if (payload == _payloadDashboard) {
       action = NotificationAction.openDashboard;
     }
-    
+
     // Invoke callback if set
     onNotificationTap?.call(action);
   }
 
   NotificationAction _actionFromRemoteMessage(RemoteMessage message) {
     final payload = _payloadFromRemoteMessage(message);
-    if (payload == _payloadMealCapture) return NotificationAction.openMealCapture;
-    if (payload == _payloadMedications) return NotificationAction.openMedications;
+    if (payload == _payloadMealCapture) {
+      return NotificationAction.openMealCapture;
+    }
+    if (payload == _payloadMedications) {
+      return NotificationAction.openMedications;
+    }
     if (payload == _payloadDashboard) return NotificationAction.openDashboard;
     return NotificationAction.none;
   }
@@ -320,7 +329,9 @@ class NotificationService {
     if (action == 'log_medication' || type == 'medication_reminder') {
       return _payloadMedications;
     }
-    if (action == 'log_meal' || action == _payloadMealCapture || type == 'meal_reminder') {
+    if (action == 'log_meal' ||
+        action == _payloadMealCapture ||
+        type == 'meal_reminder') {
       return _payloadMealCapture;
     }
     if (action == _payloadDashboard || type == 'energy_alert') {
@@ -330,8 +341,10 @@ class NotificationService {
   }
 
   Future<void> _createAndroidChannels() async {
-    final android = _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (android == null) return;
 
     await android.createNotificationChannel(
