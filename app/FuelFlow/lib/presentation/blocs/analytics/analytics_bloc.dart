@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:equatable/equatable.dart';
 import '../../../data/repositories/repositories.dart';
 import '../../../data/models/models.dart';
@@ -86,8 +87,10 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
         goals: results[3] as List<GoalProgress>,
         period: event.period,
       ));
-    } catch (e) {
-      emit(AnalyticsError(e.toString()));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[AnalyticsBloc] Failed to load analytics data: $error');
+      emit(AnalyticsError(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 

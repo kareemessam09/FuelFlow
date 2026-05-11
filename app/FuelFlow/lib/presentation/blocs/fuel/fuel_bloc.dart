@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/constants.dart';
 import '../../../data/repositories/fuel_repository.dart';
@@ -145,8 +146,8 @@ class FuelBloc extends Bloc<FuelEvent, FuelBlocState> {
     }
 
     if (_activeMeals.length == 1) {
-      // glycemicIndexCoefficient is stored as raw (1-100), normalize it
-      final rawGI = _activeMeals.values.first.glycemicIndexCoefficient;
+      // absorptionRate is the raw GI (1-100); divide by 100 to normalize
+      final rawGI = _activeMeals.values.first.absorptionRate;
       return (rawGI / 100).clamp(0.01, 1.0);
     }
 
@@ -161,8 +162,8 @@ class FuelBloc extends Bloc<FuelEvent, FuelBlocState> {
       // Weight = 1.0 at t=0, decreases exponentially
       final weight = _calculateMealWeight(ageInMinutes, meal.estimatedSatietyMinutes);
       
-      // Normalize the raw GI (1-100) to coefficient (0.01-1.0)
-      final normalizedGI = (meal.glycemicIndexCoefficient / 100).clamp(0.01, 1.0);
+      // absorptionRate is the raw GI (1-100); divide by 100 to normalize
+      final normalizedGI = (meal.absorptionRate / 100).clamp(0.01, 1.0);
       
       totalWeight += weight;
       weightedSum += normalizedGI * weight;
@@ -229,10 +230,10 @@ class FuelBloc extends Bloc<FuelEvent, FuelBlocState> {
           currentMode: event.newMode.displayName,
         );
       }
-    }).catchError((e) {
+    }).catchError((error, stackTrace) {
+      addError(error, stackTrace);
       // Non-fatal: local state is already updated
-      // ignore: avoid_print
-      print('[FuelBloc] Failed to sync activity mode: $e');
+      debugPrint('[FuelBloc] Failed to sync activity mode: $error');
     });
   }
 
@@ -317,13 +318,17 @@ class FuelBloc extends Bloc<FuelEvent, FuelBlocState> {
         fuelState: serverState,
         isSyncing: false,
         lastSyncTime: DateTime.now(),
+        status: FuelBlocStatus.running,
       ));
       LocalStorageService().saveFuelState(serverState);
-    } catch (e) {
-      // Non-fatal: continue running on local state
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[FuelBloc] Server sync failed: $error');
+      // Non-fatal: continue running on local state, but surface failure to UI/logs
       emit(state.copyWith(
         isSyncing: false,
-        // Don't mark as error — just silently fail sync
+        status: FuelBlocStatus.error,
+        errorMessage: 'Could not sync latest data. Showing local state.',
       ));
     }
   }

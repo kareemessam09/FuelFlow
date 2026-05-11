@@ -140,13 +140,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: const Color(0x0F000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -156,13 +157,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: AppColors.surfaceElevated,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
+              border: Border.all(color: AppColors.border, width: 1),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person_rounded,
-              color: Colors.white,
+              color: AppColors.primary,
               size: 40,
             ),
           ),
@@ -173,20 +174,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Text(
                   safeName.toUpperCase(),
-                  style: const TextStyle(
-                    fontFamily: 'SpaceGrotesk',
+                  style: TextStyle(
+                    fontFamily: 'DM Sans',
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 1.5,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   safeEmail,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Colors.white70,
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -194,7 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.edit_rounded, color: Colors.white),
+            icon: Icon(Icons.edit_rounded, color: AppColors.textSecondary),
             onPressed: _showEditProfileDialog,
           ),
         ],
@@ -208,7 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         title,
         style: TextStyle(
-          fontFamily: 'SpaceGrotesk',
+          fontFamily: 'DM Sans',
           fontSize: 13,
           fontWeight: FontWeight.w900,
           color: AppColors.textSecondary,
@@ -222,8 +222,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0F000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -256,8 +263,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0F000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -295,8 +309,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0F000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -322,8 +343,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0F000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -367,14 +395,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: textColor ?? AppColors.primaryBlue, size: 24),
+        child: Icon(icon, color: textColor ?? AppColors.primary, size: 24),
       ),
       title: Text(
         title,
         style: TextStyle(
-          fontFamily: 'SpaceGrotesk',
+          fontFamily: 'DM Sans',
           fontSize: 16,
           fontWeight: FontWeight.w700,
           color: textColor ?? AppColors.textPrimary,
@@ -405,14 +433,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: AppColors.primaryBlue, size: 24),
+        child: Icon(icon, color: AppColors.primary, size: 24),
       ),
       title: Text(
         title,
         style: const TextStyle(
-          fontFamily: 'SpaceGrotesk',
+          fontFamily: 'DM Sans',
           fontSize: 16,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
@@ -445,7 +473,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Text(
             'FuelFlow',
             style: TextStyle(
-              fontFamily: 'SpaceGrotesk',
+              fontFamily: 'DM Sans',
               fontSize: 16,
               fontWeight: FontWeight.w900,
               color: AppColors.textSecondary,
@@ -810,7 +838,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         isScrollControlled: true,
         backgroundColor: AppColors.surface,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
         ),
         builder: (sheetContext) => FractionallySizedBox(
           heightFactor: 0.8,
@@ -822,7 +850,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Text(
                   'Data Export',
                   style: TextStyle(
-                    fontFamily: 'SpaceGrotesk',
+                    fontFamily: 'DM Sans',
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -847,7 +875,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: SelectableText(
                         preview,
                         style: const TextStyle(
-                          fontFamily: 'RobotoMono',
+                          fontFamily: 'JetBrains Mono',
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),

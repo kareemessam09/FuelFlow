@@ -30,7 +30,7 @@ class CrashTimerWidget extends StatelessWidget {
         Text(
           'TIME TO CRASH',
           style: TextStyle(
-            fontFamily: 'SpaceGrotesk',
+            fontFamily: 'DM Sans',
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: AppColors.textTertiary,
@@ -46,16 +46,10 @@ class CrashTimerWidget extends StatelessWidget {
             Text(
               timeString,
               style: TextStyle(
-                fontFamily: 'RobotoMono',
+                fontFamily: 'JetBrains Mono',
                 fontSize: 36,
                 fontWeight: FontWeight.w700,
                 color: color,
-                shadows: [
-                  Shadow(
-                    color: color.withValues(alpha: 0.5),
-                    blurRadius: 10,
-                  ),
-                ],
               ),
             ),
           ],
@@ -74,13 +68,13 @@ class CrashTimerWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontFamily: 'SpaceGrotesk',
+          fontFamily: 'DM Sans',
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: color,

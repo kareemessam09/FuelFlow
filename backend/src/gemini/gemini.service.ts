@@ -27,7 +27,7 @@ export class GeminiService implements OnModuleInit {
     try {
       this.genAI = new GoogleGenerativeAI(apiKey);
       this.model = this.genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
       });
       this.isConfigured = true;
       this.logger.log('Gemini AI service initialized successfully');
@@ -118,8 +118,13 @@ export class GeminiService implements OnModuleInit {
       const parsed = JSON.parse(cleanedText);
 
       // Validate and sanitize the response
+      // Reject "Unknown Food" as a food name — use a generic fallback instead
+      const rawFoodName = this.validateString(parsed.foodName, 'Food');
+      const foodName =
+        rawFoodName.toLowerCase() === 'unknown food' ? 'Food' : rawFoodName;
+
       return {
-        foodName: this.validateString(parsed.foodName, 'Unknown Food'),
+        foodName,
         absorptionProfile: this.validateAbsorptionProfile(
           parsed.absorptionProfile,
         ),

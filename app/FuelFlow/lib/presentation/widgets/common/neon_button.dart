@@ -31,7 +31,7 @@ class _BrutalButtonState extends State<BrutalButton> {
 
   @override
   Widget build(BuildContext context) {
-    final background = widget.isPrimary ? AppColors.primary : AppColors.primaryBlue;
+    final background = AppColors.primary;
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -46,7 +46,7 @@ class _BrutalButtonState extends State<BrutalButton> {
         height: widget.height,
         decoration: BoxDecoration(
           color: background,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: _isPressed ? [] : [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.18),
@@ -58,7 +58,7 @@ class _BrutalButtonState extends State<BrutalButton> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             onTap: widget.isLoading ? null : widget.onPressed,
             child: Center(
               child: widget.isLoading
@@ -81,7 +81,7 @@ class _BrutalButtonState extends State<BrutalButton> {
                         Text(
                           widget.label,
                           style: const TextStyle(
-                            fontFamily: 'SpaceGrotesk',
+                            fontFamily: 'DM Sans',
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -141,7 +141,7 @@ class _BrutalIconButtonState extends State<BrutalIconButton> {
         height: widget.size,
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: AppColors.border,
             width: 1,
@@ -189,7 +189,7 @@ class OutlineButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonColor = color ?? AppColors.primaryBlue;
+    final buttonColor = color ?? AppColors.primary;
     
     return OutlinedButton(
       onPressed: onPressed,
@@ -198,7 +198,7 @@ class OutlineButton extends StatelessWidget {
         side: BorderSide(color: buttonColor, width: 2),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
         ),
       ),
       child: Row(
@@ -211,7 +211,7 @@ class OutlineButton extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'SpaceGrotesk',
+              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -253,7 +253,7 @@ class TextActionButton extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'SpaceGrotesk',
+              fontFamily: 'DM Sans',
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: buttonColor,

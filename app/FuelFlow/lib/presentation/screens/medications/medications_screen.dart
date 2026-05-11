@@ -161,8 +161,15 @@ class _MedicationsScreenState extends State<MedicationsScreen>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 3,
+                offset: Offset(0, 1),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -186,7 +193,7 @@ class _MedicationsScreenState extends State<MedicationsScreen>
                     Text(
                       name,
                       style: const TextStyle(
-                        fontFamily: 'SpaceGrotesk',
+                        fontFamily: 'DM Sans',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -226,8 +233,15 @@ class _MedicationsScreenState extends State<MedicationsScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +252,7 @@ class _MedicationsScreenState extends State<MedicationsScreen>
                 child: Text(
                   medication.name,
                   style: const TextStyle(
-                    fontFamily: 'SpaceGrotesk',
+                    fontFamily: 'DM Sans',
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -397,7 +411,7 @@ class _MedicationsScreenState extends State<MedicationsScreen>
                       Text(
                         existing == null ? 'Add Medication' : 'Edit Medication',
                         style: const TextStyle(
-                          fontFamily: 'SpaceGrotesk',
+                          fontFamily: 'DM Sans',
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,

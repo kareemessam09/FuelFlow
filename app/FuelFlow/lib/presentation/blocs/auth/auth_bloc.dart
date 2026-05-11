@@ -67,8 +67,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       await _syncFcmToken();
       emit(AuthState.authenticated(result.user));
-    } catch (e) {
-      emit(AuthState.error(e.toString().replaceFirst('Exception: ', '')));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[AuthBloc] Login failed: $error');
+      emit(AuthState.error(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -88,8 +90,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       await _syncFcmToken();
       emit(AuthState.authenticated(result.user));
-    } catch (e) {
-      emit(AuthState.error(e.toString().replaceFirst('Exception: ', '')));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[AuthBloc] Register failed: $error');
+      emit(AuthState.error(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -121,8 +125,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       await _syncFcmToken();
       emit(AuthState.authenticated(result.user));
-    } catch (e) {
-      emit(AuthState.error(e.toString().replaceFirst('Exception: ', '')));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[AuthBloc] Google sign-in failed: $error');
+      emit(AuthState.error(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -143,8 +149,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final token = await _firebaseMessaging.getToken();
       if (token == null || token.isEmpty) return;
       await _authRepository.updateFcmToken(fcmToken: token);
-    } on Exception catch (e) {
-      debugPrint('FCM token sync failed: $e');
+    } on Exception catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[AuthBloc] FCM token sync failed: $error');
     }
   }
 }

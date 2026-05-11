@@ -256,7 +256,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             Text(
               'Failed to load favorites',
               style: TextStyle(
-                fontFamily: 'SpaceGrotesk',
+                fontFamily: 'DM Sans',
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -292,7 +292,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: AppColors.accentGradient,
+                color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 64, color: Colors.white),
@@ -301,7 +301,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             Text(
               title,
               style: const TextStyle(
-                fontFamily: 'SpaceGrotesk',
+                fontFamily: 'DM Sans',
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
                 color: AppColors.textPrimary,
@@ -335,8 +335,15 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0F000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
@@ -344,15 +351,15 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            gradient: AppColors.accentGradient,
-            borderRadius: BorderRadius.circular(12),
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(Icons.restaurant_rounded, color: Colors.white),
         ),
         title: Text(
           name,
           style: const TextStyle(
-            fontFamily: 'SpaceGrotesk',
+            fontFamily: 'DM Sans',
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,

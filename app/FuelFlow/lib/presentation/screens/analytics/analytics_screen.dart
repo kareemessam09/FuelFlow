@@ -62,7 +62,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   Text(
                     _selectedPeriod,
                     style: const TextStyle(
-                      fontFamily: 'SpaceGrotesk',
+                      fontFamily: 'DM Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -94,7 +94,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   Text(
                     'Error loading analytics',
                     style: TextStyle(
-                      fontFamily: 'SpaceGrotesk',
+                      fontFamily: 'DM Sans',
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -173,13 +173,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Color(0x0F000000),
+            blurRadius: 3,
+            offset: Offset(0, 1),
           ),
         ],
       ),
@@ -188,19 +189,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.battery_charging_full_rounded,
-                color: Colors.white,
+                color: AppColors.primary,
                 size: 28,
               ),
               const SizedBox(width: 12),
               const Text(
                 'Energy Overview',
                 style: TextStyle(
-                  fontFamily: 'SpaceGrotesk',
+                  fontFamily: 'DM Sans',
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -255,13 +256,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, color: Colors.white70, size: 16),
+            Icon(icon, color: AppColors.textSecondary, size: 16),
             const SizedBox(width: 6),
             Text(
               label,
               style: const TextStyle(
                 fontSize: 12,
-                color: Colors.white70,
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -271,10 +272,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         Text(
           value,
           style: const TextStyle(
-            fontFamily: 'RobotoMono',
+            fontFamily: 'JetBrains Mono',
             fontSize: 24,
             fontWeight: FontWeight.w900,
-            color: Colors.white,
+            color: AppColors.textPrimary,
           ),
         ),
       ],
@@ -287,11 +288,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Center(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Center(
           child: Text(
             'No activity data yet',
             style: TextStyle(color: AppColors.textSecondary),
@@ -304,7 +305,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -313,7 +314,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const Text(
             'Activity Breakdown',
             style: TextStyle(
-              fontFamily: 'SpaceGrotesk',
+              fontFamily: 'DM Sans',
               fontSize: 18,
               fontWeight: FontWeight.w900,
               color: AppColors.textPrimary,
@@ -343,7 +344,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       return AppColors.modeGymStrength;
     }
     if (lower.contains('cardio')) return AppColors.modeGymCardio;
-    return AppColors.primaryBlue;
+    return AppColors.primary;
   }
 
   Widget _buildActivityRow(String name, double hours, Color color) {
@@ -360,7 +361,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               Text(
                 name,
                 style: const TextStyle(
-                  fontFamily: 'SpaceGrotesk',
+                  fontFamily: 'DM Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
@@ -369,7 +370,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               Text(
                 '${hours.toStringAsFixed(1)}h',
                 style: TextStyle(
-                  fontFamily: 'RobotoMono',
+                  fontFamily: 'JetBrains Mono',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: color,
@@ -407,7 +408,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -416,7 +417,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const Text(
             'Meal Statistics',
             style: TextStyle(
-              fontFamily: 'SpaceGrotesk',
+              fontFamily: 'DM Sans',
               fontSize: 18,
               fontWeight: FontWeight.w900,
               color: AppColors.textPrimary,
@@ -475,12 +476,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
       child: Column(
         children: [
-          Icon(icon, color: AppColors.primaryBlue, size: 24),
+          Icon(icon, color: AppColors.primary, size: 24),
           const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
-              fontFamily: 'RobotoMono',
+              fontFamily: 'JetBrains Mono',
               fontSize: 20,
               fontWeight: FontWeight.w900,
               color: AppColors.textPrimary,
@@ -502,7 +503,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -514,7 +515,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               const Text(
                 'Goals Progress',
                 style: TextStyle(
-                  fontFamily: 'SpaceGrotesk',
+                  fontFamily: 'DM Sans',
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                   color: AppColors.textPrimary,
@@ -523,7 +524,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               TextActionButton(
                 label: 'Manage',
                 onPressed: _showManageGoalsDialog,
-                color: AppColors.primaryBlue,
+                color: AppColors.primary,
               ),
             ],
           ),
@@ -563,7 +564,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             Text(
               title,
               style: const TextStyle(
-                fontFamily: 'SpaceGrotesk',
+                fontFamily: 'DM Sans',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
@@ -572,7 +573,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             Text(
               '${(progress * 100).toInt()}%',
               style: TextStyle(
-                fontFamily: 'RobotoMono',
+                fontFamily: 'JetBrains Mono',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: progress >= 1.0

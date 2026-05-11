@@ -39,7 +39,7 @@ class StateFeedback extends StatelessWidget {
               title,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontFamily: 'SpaceGrotesk',
+                fontFamily: 'DM Sans',
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,

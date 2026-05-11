@@ -20,28 +20,16 @@ class DashboardScreen extends StatelessWidget {
         child: BlocConsumer<FuelBloc, FuelBlocState>(
           listener: _handleFuelStateChanges,
           builder: (context, state) {
-            return Stack(
+            return Column(
               children: [
-                // Background gradient
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: AppColors.backgroundGradient,
-                  ),
-                ),
+                // Top section - Timer and status
+                _buildTopSection(context, state),
 
-                // Main content
-                Column(
-                  children: [
-                    // Top section - Timer and status
-                    _buildTopSection(context, state),
+                // Center section - Balloon
+                Expanded(child: _buildBalloonSection(context, state)),
 
-                    // Center section - Balloon
-                    Expanded(child: _buildBalloonSection(context, state)),
-
-                    // Bottom section - Actions and info
-                    _buildBottomSection(context, state),
-                  ],
-                ),
+                // Bottom section - Actions and info
+                _buildBottomSection(context, state),
               ],
             );
           },
@@ -73,7 +61,7 @@ class DashboardScreen extends StatelessWidget {
                   const Text(
                     'ENERGY CRITICAL',
                     style: TextStyle(
-                      fontFamily: 'SpaceGrotesk',
+                      fontFamily: 'DM Sans',
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                     ),
@@ -111,7 +99,7 @@ class DashboardScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Image.asset(
@@ -122,18 +110,14 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              ShaderMask(
-                shaderCallback: (bounds) =>
-                    AppColors.primaryGradient.createShader(bounds),
-                child: const Text(
-                  'FuelFlow',
-                  style: TextStyle(
-                    fontFamily: 'SpaceGrotesk',
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 1,
-                  ),
+              const Text(
+                'FuelFlow',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -215,15 +199,8 @@ class DashboardScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.2),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color, width: 1),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -235,11 +212,10 @@ class DashboardScreen extends StatelessWidget {
                 mode.displayName.toUpperCase(),
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontFamily: 'SpaceGrotesk',
+                  fontFamily: 'DM Sans',
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
                   color: AppColors.textPrimary,
-                  letterSpacing: 1.5,
                 ),
               ),
             ),
@@ -247,18 +223,16 @@ class DashboardScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color, color.withValues(alpha: 0.7)],
-                ),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 '${mode.multiplier}x',
-                style: const TextStyle(
-                  fontFamily: 'RobotoMono',
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                  color: color,
                 ),
               ),
             ),
@@ -346,7 +320,7 @@ class DashboardScreen extends StatelessWidget {
             const Text(
               'Energy Insights',
               style: TextStyle(
-                fontFamily: 'SpaceGrotesk',
+                fontFamily: 'DM Sans',
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
                 color: AppColors.textPrimary,
@@ -357,9 +331,18 @@ class DashboardScreen extends StatelessWidget {
             Text('Fuel level: ${state.currentVolume.toStringAsFixed(0)}%'),
             Text('Time to critical: ${state.minutesToCrash} min'),
             const SizedBox(height: 14),
-            const Text(
-              'Tip: Keep fuel above 60% during focused sessions for better consistency.',
-              style: TextStyle(color: AppColors.textSecondary),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFF7ED),
+                border: Border(
+                  left: BorderSide(color: AppColors.primary, width: 3),
+                ),
+              ),
+              child: const Text(
+                'Tip: Keep fuel above 60% during focused sessions for better consistency.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
           ],
         ),
@@ -389,7 +372,7 @@ class DashboardScreen extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'SpaceGrotesk',
+                fontFamily: 'DM Sans',
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                 color: color,

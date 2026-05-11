@@ -34,7 +34,7 @@ class ActivitySelectorSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.95),
+        color: AppColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: AppColors.border),
       ),
@@ -67,7 +67,7 @@ class ActivitySelectorSheet extends StatelessWidget {
                   Text(
                     'SELECT ACTIVITY MODE',
                     style: TextStyle(
-                      fontFamily: 'SpaceGrotesk',
+                      fontFamily: 'DM Sans',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -132,20 +132,10 @@ class _ActivityModeItem extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected ? color.withValues(alpha: 0.15) : AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : AppColors.border,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    spreadRadius: 0,
-                  ),
-                ]
-              : null,
+          borderRadius: BorderRadius.circular(12),
+          border: isSelected
+              ? Border(left: BorderSide(color: color, width: 3))
+              : Border.all(color: AppColors.border, width: 1),
         ),
         child: Row(
           children: [
@@ -173,7 +163,7 @@ class _ActivityModeItem extends StatelessWidget {
                   Text(
                     mode.displayName,
                     style: TextStyle(
-                      fontFamily: 'SpaceGrotesk',
+                      fontFamily: 'DM Sans',
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -183,7 +173,7 @@ class _ActivityModeItem extends StatelessWidget {
                   Text(
                     mode.description,
                     style: TextStyle(
-                      fontFamily: 'SpaceGrotesk',
+                      fontFamily: 'DM Sans',
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
@@ -202,7 +192,7 @@ class _ActivityModeItem extends StatelessWidget {
               child: Text(
                 '${mode.multiplier}x',
                 style: TextStyle(
-                  fontFamily: 'RobotoMono',
+                  fontFamily: 'JetBrains Mono',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: color,

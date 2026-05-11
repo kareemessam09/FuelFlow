@@ -70,11 +70,16 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
   Future<List<GoalProgress>> getGoalProgress({int days = 7}) async {
     try {
       final response = await _dio.get(
-        '/analytics/goal-progress',
-        queryParameters: {'days': days},
+        '/custom-activities/goals/progress',
       );
-      final list = response.data as List;
-      return list.map((json) => GoalProgress.fromJson(json as Map<String, dynamic>)).toList();
+      final data = response.data;
+      if (data is! List) {
+        return const [];
+      }
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(GoalProgress.fromJson)
+          .toList();
     } catch (e) {
       throw _handleError(e);
     }
