@@ -20,7 +20,7 @@ class GlassCard extends StatelessWidget {
     this.width,
     this.height,
     this.borderColor,
-    this.borderRadius = AppConstants.cardBorderRadius,
+    this.borderRadius = 12,
     this.onTap,
   });
 
@@ -32,17 +32,17 @@ class GlassCard extends StatelessWidget {
       margin: margin,
       padding: padding ?? const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated.withValues(alpha: 0.88),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: borderColor ?? AppColors.border.withValues(alpha: 0.85),
+          color: borderColor ?? AppColors.border,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Color(0x0F000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -111,7 +111,7 @@ class StatCard extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontFamily: 'RobotoMono',
+              fontFamily: 'JetBrains Mono',
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
@@ -121,7 +121,7 @@ class StatCard extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'SpaceGrotesk',
+              fontFamily: 'DM Sans',
               fontSize: 12,
               color: AppColors.textSecondary,
             ),

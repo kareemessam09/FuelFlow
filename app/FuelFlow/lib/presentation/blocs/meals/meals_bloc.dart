@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:equatable/equatable.dart';
 import '../../../data/repositories/repositories.dart';
 import '../../../domain/entities/entities.dart';
@@ -64,8 +65,10 @@ class MealsBloc extends Bloc<MealsEvent, MealsState> {
     try {
       final meals = await repository.getMealHistory(limit: 50);
       emit(MealsLoaded(meals: meals, isTodayOnly: false));
-    } catch (e) {
-      emit(MealsError(e.toString()));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[MealsBloc] Failed to load meal history: $error');
+      emit(MealsError(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -74,8 +77,10 @@ class MealsBloc extends Bloc<MealsEvent, MealsState> {
     try {
       final meals = await repository.getTodaysMeals();
       emit(MealsLoaded(meals: meals, isTodayOnly: true));
-    } catch (e) {
-      emit(MealsError(e.toString()));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[MealsBloc] Failed to load today meals: $error');
+      emit(MealsError(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 

@@ -121,7 +121,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       height: 8,
                       decoration: BoxDecoration(
                         color: _currentPage == index
-                            ? AppColors.primaryBlue
+                            ? AppColors.primary
                             : AppColors.border,
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -169,7 +169,7 @@ class _OnboardingSlide extends StatelessWidget {
         GlassCard(
           padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
           borderRadius: 28,
-          borderColor: page.accent.withValues(alpha: 0.45),
+          borderColor: AppColors.border,
           child: Column(
             children: [
               ClipRRect(

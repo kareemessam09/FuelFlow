@@ -267,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen>
                           child: TextActionButton(
                             label: 'Forgot password?',
                             onPressed: _forgotPassword,
-                            color: AppColors.primaryBlue,
+                            color: AppColors.primary,
                           ),
                         ),
                         const SizedBox(height: 28),
@@ -558,7 +558,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               TextActionButton(
                                 label: 'Sign in',
                                 onPressed: () => context.go('/login'),
-                                color: AppColors.primaryBlue,
+                                color: AppColors.primary,
                               ),
                             ],
                           ),
@@ -581,59 +581,14 @@ class _RegisterScreenState extends State<RegisterScreen>
 // Shared widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Background with ambient energy orbs
+/// Clean white background — no orbs
 class _AuthBackground extends StatelessWidget {
   final Widget child;
   const _AuthBackground({required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Cyan orb — top right
-        Positioned(
-          top: -100,
-          right: -100,
-          child: _EnergyOrb(
-            size: 320,
-            color: AppColors.primaryBlue.withValues(alpha: 0.15),
-          ),
-        ),
-        // Red/pink orb — bottom left
-        Positioned(
-          bottom: -120,
-          left: -120,
-          child: _EnergyOrb(
-            size: 360,
-            color: AppColors.primary.withValues(alpha: 0.12),
-          ),
-        ),
-        // Content
-        child,
-      ],
-    );
-  }
-}
-
-/// Oversized radial gradient circle for ambient background glow
-class _EnergyOrb extends StatelessWidget {
-  final double size;
-  final Color color;
-  const _EnergyOrb({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, color.withValues(alpha: 0.0)],
-          stops: const [0.0, 1.0],
-        ),
-      ),
-    );
+    return child;
   }
 }
 
@@ -654,8 +609,8 @@ class _AuthHeader extends StatelessWidget {
           height: 64,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(18),
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Image.asset(
             'assets/images/fuelflow_icon.png',
@@ -698,7 +653,7 @@ class _OrDivider extends StatelessWidget {
           child: Text(
             'or',
             style: TextStyle(
-              fontFamily: 'SpaceGrotesk',
+              fontFamily: 'DM Sans',
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.textTertiary,
@@ -745,7 +700,7 @@ class _ErrorBanner extends StatelessWidget {
             child: Text(
               message,
               style: const TextStyle(
-                fontFamily: 'SpaceGrotesk',
+                fontFamily: 'DM Sans',
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: AppColors.error,
@@ -781,7 +736,7 @@ class _GoogleSignInButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          backgroundColor: AppColors.surfaceElevated,
+          backgroundColor: AppColors.surface,
         ),
         child: isLoading
             ? const SizedBox(
@@ -789,7 +744,7 @@ class _GoogleSignInButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  color: AppColors.primaryBlue,
+                  color: AppColors.primary,
                 ),
               )
             : Row(
@@ -806,7 +761,7 @@ class _GoogleSignInButton extends StatelessWidget {
                   Text(
                     label,
                     style: const TextStyle(
-                      fontFamily: 'SpaceGrotesk',
+                      fontFamily: 'DM Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,

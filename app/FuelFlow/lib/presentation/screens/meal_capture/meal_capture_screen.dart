@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../data/models/medication_models.dart';
 import '../../../data/repositories/medication_repository.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../domain/entities/entities.dart';
 import '../../blocs/meal/meal.dart';
 import '../../blocs/fuel/fuel.dart';
 import '../../widgets/common/common.dart';
@@ -22,6 +23,8 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
   bool _beforeMealValidated = false;
   bool _isCheckingMeds = false;
   final MedicationRepository _medicationRepository = MedicationRepositoryImpl();
+  final TextEditingController _foodNameController = TextEditingController();
+  String? _lastAnalyzedStatus;
 
   @override
   void initState() {
@@ -29,6 +32,12 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _openCamera();
     });
+  }
+
+  @override
+  void dispose() {
+    _foodNameController.dispose();
+    super.dispose();
   }
 
   Future<void> _openCamera() async {
@@ -216,14 +225,25 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
       ),
       body: BlocConsumer<MealCaptureBloc, MealCaptureState>(
         listener: (context, state) {
+          // Populate the editable food name when a fresh analysis arrives
+          if (state.status == MealCaptureStatus.analyzed &&
+              state.analysisResult != null &&
+              _lastAnalyzedStatus != 'analyzed') {
+            _lastAnalyzedStatus = 'analyzed';
+            _foodNameController.text = state.analysisResult!.foodName;
+          }
+
           if (state.status == MealCaptureStatus.confirmed) {
             final result = state.analysisResult;
             if (result != null) {
+              final displayName = _foodNameController.text.trim().isNotEmpty
+                  ? _foodNameController.text.trim()
+                  : result.foodName;
               context.read<FuelBloc>().add(
                 FuelAddMeal(
                   fullnessAmount: result.estimatedFullnessPercentage,
                   glycemicIndex: result.glycemicIndex,
-                  mealName: result.foodName,
+                  mealName: displayName,
                 ),
               );
               ScaffoldMessenger.of(context).showSnackBar(
@@ -235,11 +255,13 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
                         color: Colors.white,
                       ),
                       const SizedBox(width: 12),
-                      const Text(
-                        'FUEL DEPLOYED!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          '${displayName.toUpperCase()} DEPLOYED!',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -249,7 +271,13 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
                 ),
               );
             }
+            _lastAnalyzedStatus = null;
             context.pop();
+          }
+
+          if (state.status == MealCaptureStatus.initial ||
+              state.status == MealCaptureStatus.cameraReady) {
+            _lastAnalyzedStatus = null;
           }
         },
         builder: (context, state) {
@@ -308,7 +336,7 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
             'ANALYSIS FAILED',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'SpaceGrotesk',
+              fontFamily: 'DM Sans',
               fontSize: 24,
               fontWeight: FontWeight.w900,
               color: AppColors.textPrimary,
@@ -346,58 +374,24 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
             Container(
               height: 240,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.file(state.capturedImage!, fit: BoxFit.cover),
               ),
             ),
           const SizedBox(height: 32),
 
-          // Food Name
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.restaurant_rounded,
-                  color: Colors.white,
-                  size: 32,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  result.foodName.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'SpaceGrotesk',
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Food Name (editable — pre-filled by AI or typed manually)
+          _buildFoodNameCard(result),
           const SizedBox(height: 24),
 
           // Energy metrics card
@@ -410,7 +404,7 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
                 const Text(
                   'ENERGY METRICS',
                   style: TextStyle(
-                    fontFamily: 'SpaceGrotesk',
+                    fontFamily: 'DM Sans',
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textTertiary,
@@ -489,6 +483,104 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
     );
   }
 
+  Widget _buildFoodNameCard(MealAnalysisResult result) {
+    final isUnknown = result.foodName.toLowerCase() == 'unknown food' ||
+        result.foodName.trim().isEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Warning banner when Gemini couldn't identify the food
+        if (isUnknown)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.info_outline_rounded,
+                    size: 16, color: AppColors.accent),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'AI could not identify the food — type the name below.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Food name card with inline text field
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          decoration: BoxDecoration(
+            color: isUnknown ? AppColors.surface : AppColors.primary,
+            borderRadius: BorderRadius.circular(12),
+            border: isUnknown
+                ? Border.all(color: AppColors.border, width: 1.5)
+                : null,
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.restaurant_rounded,
+                color: isUnknown ? AppColors.accent : Colors.white,
+                size: 28,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _foodNameController,
+                textAlign: TextAlign.center,
+                textCapitalization: TextCapitalization.words,
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: isUnknown ? AppColors.textPrimary : Colors.white,
+                  letterSpacing: 1.2,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'FOOD NAME',
+                  hintStyle: TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: isUnknown
+                        ? AppColors.textTertiary
+                        : Colors.white.withValues(alpha: 0.5),
+                    letterSpacing: 1.2,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              if (!isUnknown)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    'Tap to rename',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.65),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMetricTile({
     required IconData icon,
     required String label,
@@ -502,7 +594,7 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
         Text(
           value,
           style: TextStyle(
-            fontFamily: 'RobotoMono',
+            fontFamily: 'JetBrains Mono',
             fontSize: 20,
             fontWeight: FontWeight.w800,
             color: color,
@@ -576,7 +668,7 @@ class _ScanningOverlayState extends State<_ScanningOverlay>
             // Image preview with scan line
             if (widget.image != null)
               ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
                   width: 220,
                   height: 220,
@@ -586,7 +678,7 @@ class _ScanningOverlayState extends State<_ScanningOverlay>
                       Image.file(widget.image!, fit: BoxFit.cover),
                       // Dark tinted overlay
                       Container(
-                        color: AppColors.background.withValues(alpha: 0.55),
+                        color: Colors.black.withValues(alpha: 0.3),
                       ),
                       // Scan line
                       AnimatedBuilder(
@@ -605,14 +697,14 @@ class _ScanningOverlayState extends State<_ScanningOverlay>
                                   gradient: LinearGradient(
                                     colors: [
                                       Colors.transparent,
-                                      AppColors.primaryBlue,
-                                      AppColors.primaryBlue,
+                                      AppColors.primary,
+                                      AppColors.primary,
                                       Colors.transparent,
                                     ],
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primaryBlue.withValues(alpha: 0.6),
+                                      color: AppColors.primary.withValues(alpha: 0.6),
                                       blurRadius: 16,
                                       spreadRadius: 4,
                                     ),
@@ -638,11 +730,11 @@ class _ScanningOverlayState extends State<_ScanningOverlay>
                     child: Container(
                       padding: const EdgeInsets.all(28),
                       decoration: BoxDecoration(
-                        gradient: AppColors.accentGradient,
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primaryBlue.withValues(alpha: 0.4),
+                            color: AppColors.primary.withValues(alpha: 0.4),
                             blurRadius: 32,
                             spreadRadius: 4,
                           ),
@@ -667,11 +759,11 @@ class _ScanningOverlayState extends State<_ScanningOverlay>
                     'ANALYZING NUTRITION',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'SpaceGrotesk',
+                      fontFamily: 'DM Sans',
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                       color: AppColors.textPrimary,
-                      letterSpacing: 2,
+                      letterSpacing: 0.08,
                     ),
                   ),
                 );
@@ -689,7 +781,7 @@ class _ScanningOverlayState extends State<_ScanningOverlay>
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   backgroundColor: AppColors.surfaceElevated,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.primaryBlue),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                   minHeight: 3,
                 ),
               ),
@@ -703,7 +795,7 @@ class _ScanningOverlayState extends State<_ScanningOverlay>
   List<Widget> _buildCornerBrackets() {
     const size = 24.0;
     const thickness = 2.5;
-    const color = AppColors.primaryBlue;
+    const color = AppColors.primary;
     const offset = 8.0;
 
     Widget bracket(Alignment alignment, {bool flipH = false, bool flipV = false}) {

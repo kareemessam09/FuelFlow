@@ -136,16 +136,16 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
         final invert = isCritical && strobeValue >= 0.5;
 
         final fuelColor = AppColors.getFuelColor(currentFill);
-        final backgroundColor = invert ? Colors.white : AppColors.surface;
+        final backgroundColor = invert ? AppColors.error.withValues(alpha: 0.08) : AppColors.background;
         final liquidColor = isCritical
             ? (invert ? Colors.black : Colors.white)
             : fuelColor;
         final outlineColor = isCritical
             ? (invert ? Colors.black : Colors.white)
             : fuelColor.withValues(alpha: 0.4 + _glowAnimation.value * 0.3);
-        final textColor = invert ? Colors.black : AppColors.textPrimary;
+        final textColor = invert ? AppColors.error : AppColors.textPrimary;
         final shockColor = isCritical
-            ? (invert ? Colors.black.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.22))
+            ? (invert ? AppColors.error.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.22))
             : Colors.transparent;
 
         return GestureDetector(
@@ -232,16 +232,26 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
                       '${currentFill.toInt()}',
                       style: AppTheme.monoStyle.copyWith(
                         color: textColor,
-                        fontSize: 72,
+                        fontSize: 48,
                       ),
                     ),
                     Text(
                       '%',
                       style: TextStyle(
-                        fontFamily: 'SpaceGrotesk',
+                        fontFamily: 'DM Sans',
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: textColor.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'fuel remaining',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF666666),
                       ),
                     ),
                   ],

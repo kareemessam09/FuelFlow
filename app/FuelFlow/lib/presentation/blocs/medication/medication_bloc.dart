@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import '../../../data/models/medication_models.dart';
 import '../../../data/repositories/medication_repository.dart';
 import '../../../services/local_storage_service.dart';
@@ -187,7 +188,9 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
       final created = await _repository.createMedication(event.medication);
       await _localStorage.upsertMedication(created);
       await _fetchAndEmit(emit, statusMessage: 'Medication created');
-    } catch (error) {
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[MedicationBloc] Failed to create medication: $error');
       emit(MedicationError('Failed to create medication: $error'));
       emit(current);
     }
@@ -204,7 +207,9 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
       final updated = await _repository.updateMedication(event.id, event.medication);
       await _localStorage.upsertMedication(updated);
       await _fetchAndEmit(emit, statusMessage: 'Medication updated');
-    } catch (error) {
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[MedicationBloc] Failed to update medication: $error');
       emit(MedicationError('Failed to update medication: $error'));
       emit(current);
     }
@@ -221,7 +226,9 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
       await _repository.deleteMedication(event.id);
       await _localStorage.removeMedication(event.id);
       await _fetchAndEmit(emit, statusMessage: 'Medication deleted');
-    } catch (error) {
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[MedicationBloc] Failed to delete medication: $error');
       emit(MedicationError('Failed to delete medication: $error'));
       emit(current);
     }
@@ -246,7 +253,9 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
       final createdLog = await _repository.logMedication(log);
       await _localStorage.addMedicationLog(createdLog);
       await _fetchAndEmit(emit, statusMessage: 'Medication logged');
-    } catch (error) {
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[MedicationBloc] Failed to log medication: $error');
       emit(MedicationError('Failed to log medication: $error'));
       emit(current);
     }
@@ -262,7 +271,9 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
     try {
       final result = await _repository.checkBeforeMeal(mealType: event.mealType);
       emit(current.copyWith(beforeMealCheck: result, clearStatusMessage: true));
-    } catch (error) {
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[MedicationBloc] Failed before-meal medication check: $error');
       emit(MedicationError('Failed to check before-meal medications: $error'));
       emit(current);
     }
@@ -291,7 +302,9 @@ class MedicationBloc extends Bloc<MedicationEvent, MedicationState> {
         schedules: schedules,
         statusMessage: statusMessage,
       ));
-    } catch (error) {
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[MedicationBloc] Failed to fetch medication data: $error');
       final cachedMedications = _localStorage.getMedications();
       final cachedLogs = _localStorage.getTodayMedicationLogs();
       final cachedSchedules = _localStorage.getMedicationSchedules();

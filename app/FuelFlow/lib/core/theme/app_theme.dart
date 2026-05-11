@@ -2,42 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 
-/// FuelFlow dark theme with cleaner, more human-friendly visual rhythm.
+/// FuelFlow light theme — Clean Clinical Precision with Warm Energy Accents.
 class AppTheme {
   AppTheme._();
 
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      
-      colorScheme: const ColorScheme.dark(
+      brightness: Brightness.light,
+
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
         tertiary: AppColors.accent,
         surface: AppColors.surface,
         error: AppColors.error,
         onPrimary: AppColors.textOnPrimary,
-        onSecondary: AppColors.background,
+        onSecondary: AppColors.textPrimary,
         onSurface: AppColors.textPrimary,
         onError: AppColors.textOnPrimary,
       ),
-      
+
       scaffoldBackgroundColor: AppColors.background,
-      
+
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
         ),
         titleTextStyle: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 22,
+          fontFamily: 'DM Sans',
+          fontSize: 18,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
@@ -45,19 +45,19 @@ class AppTheme {
           color: AppColors.textPrimary,
         ),
       ),
-      
+
       cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           side: const BorderSide(
             color: AppColors.border,
             width: 1,
           ),
         ),
       ),
-      
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -65,59 +65,59 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           textStyle: const TextStyle(
-            fontFamily: 'SpaceGrotesk',
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-      
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.primaryBlue,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          textStyle: const TextStyle(
-            fontFamily: 'SpaceGrotesk',
+            fontFamily: 'DM Sans',
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
           ),
         ),
       ),
-      
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          textStyle: const TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primaryBlue,
-          side: const BorderSide(color: AppColors.primaryBlue, width: 2),
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.primary, width: 1),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           textStyle: const TextStyle(
-            fontFamily: 'SpaceGrotesk',
-            fontSize: 18,
+            fontFamily: 'DM Sans',
+            fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
         ),
       ),
-      
+
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textOnPrimary,
-        elevation: 8,
+        elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
-      
+
       iconTheme: const IconThemeData(
         color: AppColors.textPrimary,
-        size: 28,
+        size: 24,
       ),
-      
+
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primary,
@@ -125,56 +125,55 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
-      
+
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surface,
         modalBackgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         dragHandleColor: AppColors.border,
-        dragHandleSize: Size(48, 4),
+        dragHandleSize: Size(40, 4),
         showDragHandle: true,
       ),
-      
+
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
-        elevation: 16,
+        elevation: 4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
         ),
         titleTextStyle: const TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 22,
+          fontFamily: 'DM Sans',
+          fontSize: 20,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
         contentTextStyle: const TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 16,
+          fontFamily: 'DM Sans',
+          fontSize: 14,
           fontWeight: FontWeight.w400,
           color: AppColors.textSecondary,
         ),
       ),
-      
+
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.surfaceElevated,
+        backgroundColor: AppColors.textPrimary,
         contentTextStyle: const TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+          fontFamily: 'DM Sans',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: AppColors.surface,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
         ),
         behavior: SnackBarBehavior.floating,
       ),
-      
+
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.surfaceElevated,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        filled: false,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border, width: 1),
@@ -185,213 +184,209 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
+          borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
+          borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
         hintStyle: const TextStyle(
-          fontFamily: 'SpaceGrotesk',
+          fontFamily: 'DM Sans',
           fontWeight: FontWeight.w400,
           color: AppColors.textTertiary,
         ),
         labelStyle: const TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontWeight: FontWeight.w600,
+          fontFamily: 'DM Sans',
+          fontWeight: FontWeight.w500,
           color: AppColors.textSecondary,
         ),
         floatingLabelStyle: const TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontWeight: FontWeight.w700,
-          color: AppColors.primaryBlue,
+          fontFamily: 'DM Sans',
+          fontWeight: FontWeight.w600,
+          color: AppColors.primary,
         ),
       ),
-      
+
       dividerTheme: const DividerThemeData(
         color: AppColors.border,
         thickness: 1,
-        space: 24,
+        space: 1,
       ),
-      
+
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.primaryBlue,
+        color: AppColors.primary,
         circularTrackColor: AppColors.surfaceElevated,
         linearTrackColor: AppColors.surfaceElevated,
       ),
-      
+
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceElevated,
         selectedColor: AppColors.primary,
         disabledColor: AppColors.surfaceElevated,
         labelStyle: const TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 14,
+          fontFamily: 'DM Sans',
+          fontSize: 12,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(999),
         ),
         side: const BorderSide(color: AppColors.border),
       ),
-      
+
       tabBarTheme: const TabBarThemeData(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textTertiary,
         indicatorColor: AppColors.primary,
         labelStyle: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 14,
+          fontFamily: 'DM Sans',
+          fontSize: 13,
           fontWeight: FontWeight.w700,
         ),
         unselectedLabelStyle: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 14,
+          fontFamily: 'DM Sans',
+          fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
       ),
-      
+
       textTheme: const TextTheme(
         displayLarge: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 64,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
-          letterSpacing: -2,
-        ),
-        displayMedium: TextStyle(
-          fontFamily: 'SpaceGrotesk',
+          fontFamily: 'DM Sans',
           fontSize: 48,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textPrimary,
-          letterSpacing: -1.5,
-        ),
-        displaySmall: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 40,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
           letterSpacing: -1,
         ),
-        headlineLarge: TextStyle(
-          fontFamily: 'SpaceGrotesk',
+        displayMedium: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 36,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+          letterSpacing: -0.5,
+        ),
+        displaySmall: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 32,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
-        headlineMedium: TextStyle(
-          fontFamily: 'SpaceGrotesk',
+        headlineLarge: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 28,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
-        headlineSmall: TextStyle(
-          fontFamily: 'SpaceGrotesk',
+        headlineMedium: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 24,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
+        headlineSmall: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
         titleLarge: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 22,
+          fontFamily: 'DM Sans',
+          fontSize: 18,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
         titleMedium: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
+          fontFamily: 'DM Sans',
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
         titleSmall: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
+          fontFamily: 'DM Sans',
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
         bodyLarge: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 18,
+          fontFamily: 'DM Sans',
+          fontSize: 16,
           fontWeight: FontWeight.w400,
           color: AppColors.textPrimary,
         ),
         bodyMedium: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 16,
+          fontFamily: 'DM Sans',
+          fontSize: 14,
           fontWeight: FontWeight.w400,
           color: AppColors.textSecondary,
         ),
         bodySmall: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 14,
+          fontFamily: 'DM Sans',
+          fontSize: 12,
           fontWeight: FontWeight.w400,
           color: AppColors.textSecondary,
         ),
         labelLarge: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 16,
+          fontFamily: 'DM Sans',
+          fontSize: 14,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
         labelMedium: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
           color: AppColors.textSecondary,
         ),
         labelSmall: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
+          fontFamily: 'DM Sans',
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
           color: AppColors.textTertiary,
+          letterSpacing: 0.08,
         ),
       ),
     );
   }
 
-  // Custom text styles for special use cases
   static const TextStyle monoStyle = TextStyle(
-    fontFamily: 'RobotoMono',
-    fontSize: 56,
-    fontWeight: FontWeight.w900,
-    color: AppColors.textPrimary,
-    letterSpacing: -2,
-  );
-
-  static const TextStyle monoStyleSmall = TextStyle(
-    fontFamily: 'RobotoMono',
-    fontSize: 28,
+    fontFamily: 'JetBrains Mono',
+    fontSize: 48,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     letterSpacing: -1,
   );
 
-  static const TextStyle timerStyle = TextStyle(
-    fontFamily: 'RobotoMono',
-    fontSize: 72,
-    fontWeight: FontWeight.w900,
+  static const TextStyle monoStyleSmall = TextStyle(
+    fontFamily: 'JetBrains Mono',
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
-    letterSpacing: -3,
   );
-  
+
+  static const TextStyle timerStyle = TextStyle(
+    fontFamily: 'JetBrains Mono',
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+  );
+
   static TextStyle accentTimerStyle = const TextStyle(
-    fontFamily: 'RobotoMono',
-    fontSize: 72,
-    fontWeight: FontWeight.w900,
-    color: AppColors.secondary,
-    letterSpacing: -3,
+    fontFamily: 'JetBrains Mono',
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
+    color: AppColors.primary,
   );
 
   static const TextStyle sectionHeader = TextStyle(
-    fontFamily: 'SpaceGrotesk',
-    fontSize: 14,
-    fontWeight: FontWeight.w700,
+    fontFamily: 'DM Sans',
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
     color: AppColors.textTertiary,
-    letterSpacing: 1.5,
+    letterSpacing: 0.08,
   );
 }

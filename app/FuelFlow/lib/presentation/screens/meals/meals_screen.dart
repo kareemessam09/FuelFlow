@@ -152,8 +152,11 @@ class _MealsScreenState extends State<MealsScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 3, offset: Offset(0, 1)),
+        ],
       ),
       child: Row(
         children: [
@@ -162,12 +165,12 @@ class _MealsScreenState extends State<MealsScreen>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              gradient: AppColors.accentGradient,
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: meal.imageUrl != null
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                     child: Image.network(meal.imageUrl!, fit: BoxFit.cover),
                   )
                 : const Icon(Icons.restaurant, color: Colors.white),
@@ -182,7 +185,7 @@ class _MealsScreenState extends State<MealsScreen>
                 Text(
                   meal.foodName,
                   style: const TextStyle(
-                    fontFamily: 'SpaceGrotesk',
+                    fontFamily: 'DM Sans',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -207,7 +210,7 @@ class _MealsScreenState extends State<MealsScreen>
               Text(
                 _formatTime(meal.createdAt),
                 style: TextStyle(
-                  fontFamily: 'RobotoMono',
+                  fontFamily: 'JetBrains Mono',
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary,

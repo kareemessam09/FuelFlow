@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../data/repositories/meal_repository.dart';
 import 'meal_capture_event.dart';
@@ -125,10 +126,12 @@ class MealCaptureBloc extends Bloc<MealCaptureEvent, MealCaptureState> {
         analysisResult: result,
         status: MealCaptureStatus.analyzed,
       ));
-    } catch (e) {
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[MealCaptureBloc] Failed to analyze meal image: $error');
       emit(state.copyWith(
         status: MealCaptureStatus.error,
-        errorMessage: 'Failed to analyze image: $e',
+        errorMessage: 'Failed to analyze image: $error',
       ));
     }
   }

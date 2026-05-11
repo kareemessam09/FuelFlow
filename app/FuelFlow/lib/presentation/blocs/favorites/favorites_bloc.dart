@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:equatable/equatable.dart';
 import '../../../data/repositories/repositories.dart';
 import '../../../data/models/models.dart';
@@ -74,8 +75,10 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     try {
       final meals = await repository.getFavorites();
       emit(FavoritesLoaded(meals: meals));
-    } catch (e) {
-      emit(FavoritesError(e.toString()));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[FavoritesBloc] Failed to load favorite meals: $error');
+      emit(FavoritesError(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -84,8 +87,10 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     try {
       final templates = await repository.getTemplates();
       emit(FavoritesLoaded(templates: templates));
-    } catch (e) {
-      emit(FavoritesError(e.toString()));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[FavoritesBloc] Failed to load templates: $error');
+      emit(FavoritesError(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -94,8 +99,10 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     try {
       final foods = await repository.getCustomFoods();
       emit(FavoritesLoaded(foods: foods));
-    } catch (e) {
-      emit(FavoritesError(e.toString()));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[FavoritesBloc] Failed to load custom foods: $error');
+      emit(FavoritesError(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -103,8 +110,10 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     try {
       await repository.deleteFavorite(event.id.toString());
       add(FavoritesLoadMeals()); // Reload
-    } catch (e) {
-      emit(FavoritesError(e.toString()));
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      debugPrint('[FavoritesBloc] Failed to delete favorite meal: $error');
+      emit(FavoritesError(error.toString().replaceFirst('Exception: ', '')));
     }
   }
 }

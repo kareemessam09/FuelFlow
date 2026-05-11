@@ -79,26 +79,6 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Blurred energy orb - top right
-          Positioned(
-            top: -80,
-            right: -80,
-            child: _EnergyOrb(
-              size: 280,
-              color: AppColors.primaryBlue.withValues(alpha: 0.18),
-            ),
-          ),
-          // Blurred energy orb - bottom left
-          Positioned(
-            bottom: -100,
-            left: -100,
-            child: _EnergyOrb(
-              size: 320,
-              color: AppColors.primary.withValues(alpha: 0.14),
-            ),
-          ),
-
-          // Main content
           Column(
             children: [
               const Spacer(flex: 3),
@@ -121,12 +101,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 height: 88,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      AppColors.primary.withValues(alpha: 0.30),
-                                      AppColors.primary.withValues(alpha: 0.0),
-                                    ],
-                                  ),
+                                  color: AppColors.primary.withValues(alpha: 0.15),
                                 ),
                               ),
                             ),
@@ -136,7 +111,7 @@ class _SplashScreenState extends State<SplashScreen>
                               height: 72,
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                gradient: AppColors.primaryGradient,
+                                color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Image.asset(
@@ -151,25 +126,21 @@ class _SplashScreenState extends State<SplashScreen>
                     const SizedBox(height: 28),
 
                     // App name
-                    ShaderMask(
-                      shaderCallback: (bounds) =>
-                          AppColors.primaryGradient.createShader(bounds),
-                      child: const Text(
-                        'FuelFlow',
-                        style: TextStyle(
-                          fontFamily: 'SpaceGrotesk',
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
+                    Text(
+                      'FuelFlow',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        letterSpacing: 0.5,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Track your energy, fuel your day',
                       style: TextStyle(
-                        fontFamily: 'SpaceGrotesk',
+                        fontFamily: 'DM Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                         color: AppColors.textTertiary,
@@ -202,25 +173,3 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-/// Oversized radial gradient circle for ambient background glow
-class _EnergyOrb extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _EnergyOrb({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, color.withValues(alpha: 0.0)],
-          stops: const [0.0, 1.0],
-        ),
-      ),
-    );
-  }
-}

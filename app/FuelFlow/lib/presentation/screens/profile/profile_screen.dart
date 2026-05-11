@@ -93,37 +93,30 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       Container(
-                        width: 120,
-                        height: 120,
+                        width: 72,
+                        height: 72,
                         decoration: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
+                          color: AppColors.surfaceElevated,
                           shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.4),
-                              blurRadius: 24,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
+                          border: Border.all(color: AppColors.border, width: 1),
                         ),
                         child: const Center(
                           child: Icon(
                             Icons.person_rounded,
-                            color: Colors.white,
-                            size: 64,
+                            color: AppColors.primary,
+                            size: 36,
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        profileName.toUpperCase(),
+                        profileName,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontFamily: 'SpaceGrotesk',
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: 'DM Sans',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
-                          letterSpacing: 2,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -250,8 +243,15 @@ class ProfileScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0F000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -267,7 +267,7 @@ class ProfileScreen extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontFamily: 'RobotoMono',
+              fontFamily: 'JetBrains Mono',
               fontSize: 24,
               fontWeight: FontWeight.w900,
               color: color,
@@ -298,8 +298,15 @@ class ProfileScreen extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x0F000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
@@ -307,15 +314,14 @@ class ProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: accentColor.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: accentColor.withValues(alpha: 0.35)),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: accentColor, size: 24),
         ),
         title: Text(
           title,
           style: const TextStyle(
-            fontFamily: 'SpaceGrotesk',
+            fontFamily: 'DM Sans',
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
@@ -422,7 +428,7 @@ class ProfileScreen extends StatelessWidget {
         isScrollControlled: true,
         backgroundColor: AppColors.surface,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
         ),
         builder: (sheetContext) => FractionallySizedBox(
           heightFactor: 0.8,
@@ -434,7 +440,7 @@ class ProfileScreen extends StatelessWidget {
                 const Text(
                   'Export Preview',
                   style: TextStyle(
-                    fontFamily: 'SpaceGrotesk',
+                    fontFamily: 'DM Sans',
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -459,7 +465,7 @@ class ProfileScreen extends StatelessWidget {
                       child: SelectableText(
                         preview,
                         style: const TextStyle(
-                          fontFamily: 'RobotoMono',
+                          fontFamily: 'JetBrains Mono',
                           fontSize: 12,
                           color: AppColors.textSecondary,
                         ),

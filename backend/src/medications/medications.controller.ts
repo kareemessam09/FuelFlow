@@ -49,18 +49,6 @@ export class MedicationsController {
   }
 
   /**
-   * GET /api/medications/:id
-   * Get a single medication by ID
-   */
-  @Get(':id')
-  async findOne(
-    @CurrentUser() user: CurrentUserType,
-    @Param('id', ParseIntPipe) id: number,
-  ) {
-    return this.medicationsService.findOne(user.userId, id);
-  }
-
-  /**
    * PATCH /api/medications/:id
    * Update a medication
    */
@@ -181,6 +169,21 @@ export class MedicationsController {
   @Get('schedules')
   async getSchedules(@CurrentUser() user: CurrentUserType) {
     return this.medicationsService.getSchedules(user.userId);
+  }
+
+  /**
+   * GET /api/medications/:id
+   * Get a single medication by ID
+   *
+   * NOTE: keep this route after all static GET routes to avoid
+   * collisions with endpoints like "check-before-meal" and "after-meal".
+   */
+  @Get(':id')
+  async findOne(
+    @CurrentUser() user: CurrentUserType,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.medicationsService.findOne(user.userId, id);
   }
 
   /**

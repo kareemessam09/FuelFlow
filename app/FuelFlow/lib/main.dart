@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -18,6 +20,9 @@ import 'presentation/blocs/blocs.dart';
 import 'router/router.dart';
 import 'services/services.dart';
 
+final GlobalKey<ScaffoldMessengerState> _rootScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -25,65 +30,69 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await NotificationService().showRemoteMessage(message);
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    Bloc.observer = _AppBlocObserver();
+    _configureGlobalErrorHandling();
 
-  // Initialize timezone data for scheduled notifications
-  tz.initializeTimeZones();
+    // Initialize timezone data for scheduled notifications
+    tz.initializeTimeZones();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // Initialize Hive for local persistence
-  await Hive.initFlutter();
+    // Initialize Hive for local persistence
+    await Hive.initFlutter();
 
-  // Register all TypeAdapters
-  Hive.registerAdapter(ActivityModeAdapter());
-  Hive.registerAdapter(ActivityLogAdapterAdapter()); // Generated adapter
-  Hive.registerAdapter(AbsorptionProfileAdapter());
-  Hive.registerAdapter(MealLogAdapterAdapter()); // Generated adapter
-  Hive.registerAdapter(FuelStateAdapterAdapter()); // Generated adapter
-  Hive.registerAdapter(UserAdapterAdapter()); // Generated adapter
-  Hive.registerAdapter(MedicationAdapterAdapter()); // Generated adapter
-  Hive.registerAdapter(MedicationLogAdapterAdapter()); // Generated adapter
-  Hive.registerAdapter(MedicationScheduleAdapterAdapter()); // Generated adapter
-  Hive.registerAdapter(SensitivityLevelAdapter());
-  Hive.registerAdapter(TargetGoalAdapter());
+    // Register all TypeAdapters
+    Hive.registerAdapter(ActivityModeAdapter());
+    Hive.registerAdapter(ActivityLogAdapterAdapter()); // Generated adapter
+    Hive.registerAdapter(AbsorptionProfileAdapter());
+    Hive.registerAdapter(MealLogAdapterAdapter()); // Generated adapter
+    Hive.registerAdapter(FuelStateAdapterAdapter()); // Generated adapter
+    Hive.registerAdapter(UserAdapterAdapter()); // Generated adapter
+    Hive.registerAdapter(MedicationAdapterAdapter()); // Generated adapter
+    Hive.registerAdapter(MedicationLogAdapterAdapter()); // Generated adapter
+    Hive.registerAdapter(MedicationScheduleAdapterAdapter()); // Generated adapter
+    Hive.registerAdapter(SensitivityLevelAdapter());
+    Hive.registerAdapter(TargetGoalAdapter());
 
-  // Open required boxes
-  await Hive.openBox('fuelState');
-  await Hive.openBox('user');
-  await Hive.openBox('meals');
-  await Hive.openBox('activities');
-  await Hive.openBox('medications');
-  await Hive.openBox('medicationLogs');
-  await Hive.openBox('medicationSchedules');
+    // Open required boxes
+    await Hive.openBox('fuelState');
+    await Hive.openBox('user');
+    await Hive.openBox('meals');
+    await Hive.openBox('activities');
+    await Hive.openBox('medications');
+    await Hive.openBox('medicationLogs');
+    await Hive.openBox('medicationSchedules');
 
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+    // Set preferred orientations
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
 
-  // Set system UI overlay style for immersive dark theme
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: Color(0xFF161B22),
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
+    // Set system UI overlay style for immersive dark theme
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Color(0xFF161B22),
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
 
-  // Initialize AuthService (token persistence)
-  await AuthService().init();
+    // Initialize AuthService (token persistence)
+    await AuthService().init();
 
-  // Initialize notification service
-  await NotificationService().initialize();
-  await NotificationService().initializeRemoteMessaging();
+    // Initialize notification service
+    await NotificationService().initialize();
+    await NotificationService().initializeRemoteMessaging();
 
-  runApp(const FuelFlowApp());
+    runApp(const FuelFlowApp());
+  }, _reportUnhandledError);
 }
 
 /// FuelFlow App - Main application widget
@@ -185,19 +194,32 @@ class _FuelFlowAppContentState extends State<_FuelFlowAppContent>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<FuelBloc, FuelBlocState>(
-      listenWhen: (previous, current) =>
-          current.shouldTriggerCriticalNotification,
-      listener: (context, state) {
-        // Trigger system notification when reaching critical threshold
-        NotificationService().showCriticalEnergyAlert(
-          currentMode: state.currentMode.displayName,
-          minutesToCrash: state.minutesToCrash,
-        );
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<FuelBloc, FuelBlocState>(
+          listenWhen: (previous, current) =>
+              current.shouldTriggerCriticalNotification,
+          listener: (context, state) {
+            // Trigger system notification when reaching critical threshold
+            NotificationService().showCriticalEnergyAlert(
+              currentMode: state.currentMode.displayName,
+              minutesToCrash: state.minutesToCrash,
+            );
+          },
+        ),
+        BlocListener<FuelBloc, FuelBlocState>(
+          listenWhen: (previous, current) =>
+              current.errorMessage != null &&
+              previous.errorMessage != current.errorMessage,
+          listener: (context, state) {
+            _showGlobalError(state.errorMessage!);
+          },
+        ),
+      ],
       child: MaterialApp.router(
         title: 'FuelFlow',
         debugShowCheckedModeBanner: false,
+        scaffoldMessengerKey: _rootScaffoldMessengerKey,
         theme: AppTheme.darkTheme,
         routerConfig: AppRouter.router,
         supportedLocales: const [Locale('en'), Locale('ar')],
@@ -219,5 +241,74 @@ class _FuelFlowAppContentState extends State<_FuelFlowAppContent>
         },
       ),
     );
+  }
+}
+
+void _configureGlobalErrorHandling() {
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    _reportUnhandledError(details.exception, details.stack ?? StackTrace.current);
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    _reportUnhandledError(error, stack);
+    return true;
+  };
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    final message = details.exceptionAsString();
+    return Material(
+      color: Colors.white,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 36),
+              const SizedBox(height: 12),
+              const Text(
+                'Something went wrong',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
+}
+
+void _reportUnhandledError(Object error, StackTrace stackTrace) {
+  debugPrint('[Unhandled Error] $error');
+  debugPrintStack(stackTrace: stackTrace);
+  _showGlobalError('Unexpected error occurred. Please try again.');
+}
+
+void _showGlobalError(String message) {
+  final messenger = _rootScaffoldMessengerKey.currentState;
+  if (messenger == null) return;
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+}
+
+class _AppBlocObserver extends BlocObserver {
+  @override
+  void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
+    debugPrint('[Bloc Error] ${bloc.runtimeType}: $error');
+    debugPrintStack(stackTrace: stackTrace);
+    super.onError(bloc, error, stackTrace);
   }
 }

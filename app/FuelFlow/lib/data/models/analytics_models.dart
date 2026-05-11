@@ -27,18 +27,26 @@ class WeeklyReport {
   });
 
   factory WeeklyReport.fromJson(Map<String, dynamic> json) {
+    // Backend nests stats under energyStats / mealStats / activityStats sub-objects
+    final energy = json['energyStats'] as Map<String, dynamic>? ?? {};
+    final meals = json['mealStats'] as Map<String, dynamic>? ?? {};
+    final activity = json['activityStats'] as Map<String, dynamic>? ?? {};
+    final rawBreakdown = activity['modeBreakdown'] as Map? ?? {};
+
     return WeeklyReport(
-      userId: json['userId'] as String,
+      userId: json['userId'] as String? ?? '',
       startDate: DateTime.parse(json['startDate'] as String),
       endDate: DateTime.parse(json['endDate'] as String),
-      avgEnergyLevel: (json['avgEnergyLevel'] as num).toDouble(),
-      minEnergyLevel: (json['minEnergyLevel'] as num).toDouble(),
-      maxEnergyLevel: (json['maxEnergyLevel'] as num).toDouble(),
-      totalMeals: json['totalMeals'] as int,
-      activityBreakdown: Map<String, int>.from(json['activityBreakdown'] as Map),
-      timeInOptimal: json['timeInOptimal'] as int,
-      timeInWarning: json['timeInWarning'] as int,
-      timeInCritical: json['timeInCritical'] as int,
+      avgEnergyLevel: (energy['avgEnergyLevel'] as num? ?? 0).toDouble(),
+      minEnergyLevel: (energy['minEnergyLevel'] as num? ?? 0).toDouble(),
+      maxEnergyLevel: (energy['maxEnergyLevel'] as num? ?? 0).toDouble(),
+      totalMeals: (meals['totalMeals'] as num? ?? 0).toInt(),
+      activityBreakdown: Map<String, int>.from(
+        rawBreakdown.map((k, v) => MapEntry(k.toString(), (v as num).toInt())),
+      ),
+      timeInOptimal: (energy['timeInOptimal'] as num? ?? 0).toInt(),
+      timeInWarning: (energy['timeInWarning'] as num? ?? 0).toInt(),
+      timeInCritical: (energy['timeInCritical'] as num? ?? 0).toInt(),
     );
   }
 }
@@ -60,12 +68,16 @@ class MealStats {
   });
 
   factory MealStats.fromJson(Map<String, dynamic> json) {
+    // Backend fields: avgFullnessVolume, avgMealsPerDay, categoryBreakdown
+    final rawBreakdown = json['categoryBreakdown'] as Map? ?? {};
     return MealStats(
-      totalMeals: json['totalMeals'] as int,
-      avgFullness: (json['avgFullness'] as num).toDouble(),
-      avgGlycemicIndex: (json['avgGlycemicIndex'] as num).toDouble(),
-      mealsPerDay: (json['mealsPerDay'] as num).toDouble(),
-      categoryBreakdown: Map<String, int>.from(json['categoryBreakdown'] as Map? ?? {}),
+      totalMeals: (json['totalMeals'] as num? ?? 0).toInt(),
+      avgFullness: (json['avgFullnessVolume'] as num? ?? json['avgFullness'] as num? ?? 0).toDouble(),
+      avgGlycemicIndex: (json['avgGlycemicIndex'] as num? ?? 0).toDouble(),
+      mealsPerDay: (json['avgMealsPerDay'] as num? ?? json['mealsPerDay'] as num? ?? 0).toDouble(),
+      categoryBreakdown: Map<String, int>.from(
+        rawBreakdown.map((k, v) => MapEntry(k.toString(), (v as num).toInt())),
+      ),
     );
   }
 }
@@ -85,11 +97,19 @@ class ActivityStats {
   });
 
   factory ActivityStats.fromJson(Map<String, dynamic> json) {
+    // Backend fields: modeBreakdown, totalMinutes, avgSessionDuration
+    final rawBreakdown = json['modeBreakdown'] as Map? ?? json['activityMinutes'] as Map? ?? {};
+    final modeBreakdown = Map<String, int>.from(
+      rawBreakdown.map((k, v) => MapEntry(k.toString(), (v as num).toInt())),
+    );
+    final mostCommon = modeBreakdown.isEmpty
+        ? 'Resting'
+        : (modeBreakdown.entries.reduce((a, b) => a.value > b.value ? a : b).key);
     return ActivityStats(
-      activityMinutes: Map<String, int>.from(json['activityMinutes'] as Map),
-      mostCommonActivity: json['mostCommonActivity'] as String,
-      totalActiveMinutes: json['totalActiveMinutes'] as int,
-      avgActivityMultiplier: (json['avgActivityMultiplier'] as num).toDouble(),
+      activityMinutes: modeBreakdown,
+      mostCommonActivity: mostCommon,
+      totalActiveMinutes: (json['totalMinutes'] as num? ?? json['totalActiveMinutes'] as num? ?? 0).toInt(),
+      avgActivityMultiplier: (json['avgSessionDuration'] as num? ?? json['avgActivityMultiplier'] as num? ?? 1.0).toDouble(),
     );
   }
 }
@@ -113,13 +133,25 @@ class GoalProgress {
   });
 
   factory GoalProgress.fromJson(Map<String, dynamic> json) {
+    // Supports both:
+    // 1) flat shape: { id, activityType, targetMinutes, completedMinutes, progress, period }
+    // 2) nested shape from /custom-activities/goals/progress:
+    //    { goal: {...}, currentMinutes, progressPercent, ... }
+    final nestedGoal = json['goal'] as Map<String, dynamic>?;
+    final source = nestedGoal ?? json;
+    final progressPercent =
+        (json['progressPercent'] as num?)?.toDouble() ??
+        ((json['progress'] as num?)?.toDouble() ?? 0.0) * 100.0;
+
     return GoalProgress(
-      goalId: json['id'].toString(),
-      activityType: json['activityType'] as String,
-      targetMinutes: json['targetMinutes'] as int,
-      completedMinutes: json['completedMinutes'] as int,
-      progress: (json['progress'] as num).toDouble(),
-      period: json['period'] as String,
+      goalId: (source['id'] ?? '').toString(),
+      activityType: (source['activityType'] as String?) ?? 'Activity',
+      targetMinutes: (source['targetMinutes'] as num? ?? 0).toInt(),
+      completedMinutes:
+          (json['currentMinutes'] as num? ?? json['completedMinutes'] as num? ?? 0)
+              .toInt(),
+      progress: (progressPercent / 100.0).clamp(0.0, 1.0),
+      period: (source['period'] as String?) ?? 'daily',
     );
   }
 }
