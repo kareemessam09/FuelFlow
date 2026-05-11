@@ -53,11 +53,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, user.email);
 
     return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
+      user: this.mapUserForAuthResponse(user),
       ...tokens,
     };
   }
@@ -83,11 +79,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, user.email);
 
     return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
+      user: this.mapUserForAuthResponse(user),
       ...tokens,
     };
   }
@@ -138,16 +130,26 @@ export class AuthService {
       const tokens = await this.generateTokens(user.id, user.email);
 
       return {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
+        user: this.mapUserForAuthResponse(user),
         ...tokens,
       };
     } catch (error) {
       throw new UnauthorizedException('Invalid Google token');
     }
+  }
+
+  async getCurrentUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User account not found');
+    }
+
+    return {
+      user: this.mapUserForAuthResponse(user),
+    };
   }
 
   async updateFcmToken(userId: string, fcmToken: string) {
@@ -169,7 +171,9 @@ export class AuthService {
     }
 
     const resetToken = randomBytes(24).toString('hex');
-    const resetTokenHash = createHash('sha256').update(resetToken).digest('hex');
+    const resetTokenHash = createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
     const tokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
     await this.prisma.notification.create({
       data: {
@@ -220,9 +224,8 @@ export class AuthService {
       used?: boolean;
     };
     const storedHash = resetData.tokenHash;
-    const expiresAt = resetData.expiresAt != null
-      ? new Date(resetData.expiresAt)
-      : new Date(0);
+    const expiresAt =
+      resetData.expiresAt != null ? new Date(resetData.expiresAt) : new Date(0);
     if (!storedHash || resetData.used == true) {
       throw new UnauthorizedException('Reset token already used or invalid');
     }
@@ -256,7 +259,11 @@ export class AuthService {
     return { message: 'Password reset successfully' };
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid user account');
@@ -285,6 +292,32 @@ export class AuthService {
 
     return {
       accessToken,
+    };
+  }
+
+  private mapUserForAuthResponse(user: {
+    id: string;
+    email: string;
+    name: string | null;
+    sensitivityLevel: string;
+    targetGoal: string;
+    units: string;
+    createdAt: Date;
+    notifyOnLowEnergy: boolean;
+    notifyMealReminders: boolean;
+    mealReminderInterval: number;
+  }) {
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      sensitivityLevel: user.sensitivityLevel,
+      targetGoal: user.targetGoal,
+      units: user.units,
+      createdAt: user.createdAt.toISOString(),
+      notifyOnLowEnergy: user.notifyOnLowEnergy,
+      notifyMealReminders: user.notifyMealReminders,
+      mealReminderInterval: user.mealReminderInterval,
     };
   }
 }

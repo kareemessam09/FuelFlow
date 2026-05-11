@@ -1,7 +1,15 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateFavoriteDto, CreateTemplateDto, CreateCustomFoodDto } from './dto/create-favorite.dto';
-import { UpdateFavoriteDto, UpdateTemplateDto, UpdateCustomFoodDto } from './dto/update-favorite.dto';
+import {
+  CreateFavoriteDto,
+  CreateTemplateDto,
+  CreateCustomFoodDto,
+} from './dto/create-favorite.dto';
+import {
+  UpdateFavoriteDto,
+  UpdateTemplateDto,
+  UpdateCustomFoodDto,
+} from './dto/update-favorite.dto';
 
 @Injectable()
 export class FavoritesService {
@@ -63,7 +71,7 @@ export class FavoritesService {
 
   async createMealFromFavorite(userId: string, favoriteId: number) {
     const favorite = await this.getFavorite(userId, favoriteId);
-    
+
     // Increment usage count
     await this.incrementFavoriteUsage(userId, favoriteId);
 
@@ -206,7 +214,11 @@ export class FavoritesService {
     });
   }
 
-  async createMealFromCustomFood(userId: string, foodId: number, servings: number = 1) {
+  async createMealFromCustomFood(
+    userId: string,
+    foodId: number,
+    servings: number = 1,
+  ) {
     const food = await this.getCustomFood(userId, foodId);
 
     return this.prisma.mealLog.create({

@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/constants.dart';
+import '../../../router/app_router.dart';
+import '../../../services/auth_service.dart';
 import '../../blocs/auth/auth.dart';
 
-/// SplashScreen - Initial loading screen with branding animation
-/// 
-/// Shows the FuelFlow logo with a fuel gauge animation while:
-/// - Checking authentication status
-/// - Loading cached user data
-/// - Initializing services
+/// SplashScreen - Simple startup screen while session state is checked
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -19,199 +16,211 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fuelFillAnimation;
+  static const Duration _minimumDisplayTime = Duration(milliseconds: 1400);
+  bool _navigated = false;
+  late AnimationController _pulseCtrl;
+  late Animation<double> _pulseAnim;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+    _pulseCtrl = AnimationController(
       vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 0.85, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
-      ),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.4, curve: Curves.easeOutBack),
-      ),
-    );
-
-    _fuelFillAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.3, 0.9, curve: Curves.easeInOut),
-      ),
-    );
-
-    _controller.forward();
-
-    // Navigate after animation completes
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _navigateBasedOnAuth();
-      }
-    });
-  }
-
-  void _navigateBasedOnAuth() {
-    final authState = context.read<AuthBloc>().state;
-    
-    if (authState.status == AuthStatus.authenticated) {
-      context.go('/');
-    } else if (authState.status == AuthStatus.unauthenticated) {
-      context.go('/login');
-    } else {
-      // Still checking, wait a bit more
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          _navigateBasedOnAuth();
-        }
-      });
-    }
+    _resolveRoute();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pulseCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _resolveRoute() async {
+    await Future<void>.delayed(_minimumDisplayTime);
+    if (!mounted || _navigated) return;
+
+    final authBloc = context.read<AuthBloc>();
+    var authState = authBloc.state;
+
+    if (authState.status == AuthStatus.initial ||
+        authState.status == AuthStatus.loading) {
+      authState = await authBloc.stream.firstWhere(
+        (state) =>
+            state.status == AuthStatus.authenticated ||
+            state.status == AuthStatus.unauthenticated ||
+            state.status == AuthStatus.error,
+      );
+    }
+
+    if (!mounted || _navigated) return;
+    _navigated = true;
+
+    if (!AuthService().isOnboardingCompleted) {
+      context.go(AppRoutes.onboarding);
+      return;
+    }
+
+    if (authState.status == AuthStatus.authenticated) {
+      context.go(AppRoutes.dashboard);
+      return;
+    }
+
+    context.go(AppRoutes.login);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Logo with fade and scale animation
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: _buildLogo(),
-                  ),
-                ),
-                const SizedBox(height: 48),
-                // Fuel gauge loading indicator
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: _buildFuelGauge(),
-                ),
-                const SizedBox(height: 24),
-                // Tagline
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Text(
-                    'FUEL YOUR FOCUS',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 4,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Text(
-                    'Tracking energy, meals, and activity...',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ),
-              ],
+      body: Stack(
+        children: [
+          // Blurred energy orb - top right
+          Positioned(
+            top: -80,
+            right: -80,
+            child: _EnergyOrb(
+              size: 280,
+              color: AppColors.primaryBlue.withValues(alpha: 0.18),
             ),
-          );
-        },
+          ),
+          // Blurred energy orb - bottom left
+          Positioned(
+            bottom: -100,
+            left: -100,
+            child: _EnergyOrb(
+              size: 320,
+              color: AppColors.primary.withValues(alpha: 0.14),
+            ),
+          ),
+
+          // Main content
+          Column(
+            children: [
+              const Spacer(flex: 3),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Pulsing logo
+                    AnimatedBuilder(
+                      animation: _pulseAnim,
+                      builder: (context, child) {
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Glow ring
+                            Transform.scale(
+                              scale: _pulseAnim.value,
+                              child: Container(
+                                width: 88,
+                                height: 88,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      AppColors.primary.withValues(alpha: 0.30),
+                                      AppColors.primary.withValues(alpha: 0.0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Logo container
+                            Container(
+                              width: 72,
+                              height: 72,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                gradient: AppColors.primaryGradient,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Image.asset(
+                                'assets/images/fuelflow_icon.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 28),
+
+                    // App name
+                    ShaderMask(
+                      shaderCallback: (bounds) =>
+                          AppColors.primaryGradient.createShader(bounds),
+                      child: const Text(
+                        'FuelFlow',
+                        style: TextStyle(
+                          fontFamily: 'SpaceGrotesk',
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Track your energy, fuel your day',
+                      style: TextStyle(
+                        fontFamily: 'SpaceGrotesk',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textTertiary,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(flex: 3),
+
+              // Slim loading bar at the bottom
+              Padding(
+                padding: const EdgeInsets.only(bottom: 48),
+                child: SizedBox(
+                  width: 48,
+                  child: LinearProgressIndicator(
+                    backgroundColor: AppColors.border,
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                    minHeight: 3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildLogo() {
-    return Column(
-      children: [
-        // Fuel drop icon
-        Container(
-          width: 80,
-          height: 100,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(40),
-              topRight: Radius.circular(40),
-              bottomLeft: Radius.circular(50),
-              bottomRight: Radius.circular(50),
-            ),
-          ),
-          child: Center(
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        // App name
-        Text(
-          'FUELFLOW',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 8,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
+/// Oversized radial gradient circle for ambient background glow
+class _EnergyOrb extends StatelessWidget {
+  final double size;
+  final Color color;
 
-  Widget _buildFuelGauge() {
-    return AnimatedBuilder(
-      animation: _fuelFillAnimation,
-      builder: (context, child) {
-        return Container(
-          width: 200,
-          height: 8,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: AppColors.border, width: 2),
-          ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: FractionallySizedBox(
-              widthFactor: _fuelFillAnimation.value,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+  const _EnergyOrb({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color, color.withValues(alpha: 0.0)],
+          stops: const [0.0, 1.0],
+        ),
+      ),
     );
   }
 }

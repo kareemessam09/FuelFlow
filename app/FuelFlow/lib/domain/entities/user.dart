@@ -9,6 +9,8 @@ class User extends Equatable {
   final TargetGoal targetGoal;
   final String units;
   final DateTime createdAt;
+  final bool notifyOnLowEnergy;
+  final bool notifyMealReminders;
 
   const User({
     required this.id,
@@ -18,6 +20,8 @@ class User extends Equatable {
     this.targetGoal = TargetGoal.maintenance,
     this.units = 'metric',
     required this.createdAt,
+    this.notifyOnLowEnergy = true,
+    this.notifyMealReminders = true,
   });
 
   /// Factory for creating a guest/anonymous user
@@ -28,6 +32,8 @@ class User extends Equatable {
       targetGoal: TargetGoal.maintenance,
       units: 'metric',
       createdAt: DateTime.now(),
+      notifyOnLowEnergy: true,
+      notifyMealReminders: true,
     );
   }
 
@@ -39,6 +45,8 @@ class User extends Equatable {
     TargetGoal? targetGoal,
     String? units,
     DateTime? createdAt,
+    bool? notifyOnLowEnergy,
+    bool? notifyMealReminders,
   }) {
     return User(
       id: id ?? this.id,
@@ -48,19 +56,23 @@ class User extends Equatable {
       targetGoal: targetGoal ?? this.targetGoal,
       units: units ?? this.units,
       createdAt: createdAt ?? this.createdAt,
+      notifyOnLowEnergy: notifyOnLowEnergy ?? this.notifyOnLowEnergy,
+      notifyMealReminders: notifyMealReminders ?? this.notifyMealReminders,
     );
   }
 
   @override
   List<Object?> get props => [
-        id,
-        email,
-        displayName,
-        sensitivityLevel,
-        targetGoal,
-        units,
-        createdAt,
-      ];
+    id,
+    email,
+    displayName,
+    sensitivityLevel,
+    targetGoal,
+    units,
+    createdAt,
+    notifyOnLowEnergy,
+    notifyMealReminders,
+  ];
 }
 
 /// User's sensitivity to energy crashes

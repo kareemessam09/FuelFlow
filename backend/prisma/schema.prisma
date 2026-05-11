@@ -2,7 +2,7 @@
 // Proactive Energy & Metabolism Manager
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
@@ -15,36 +15,36 @@ datasource db {
 // USER MODEL
 // ============================================
 model User {
-  id               String   @id @default(uuid())
-  email            String   @unique
-  name             String?
-  
+  id    String  @id @default(uuid())
+  email String  @unique
+  name  String?
+
   // Authentication fields
-  password         String?  // Hashed password (null for Google-only users)
-  googleId         String?  @unique // Google OAuth ID
-  authProvider     String   @default("local") // "local" or "google"
-  
+  password     String? // Hashed password (null for Google-only users)
+  googleId     String? @unique // Google OAuth ID
+  authProvider String  @default("local") // "local" or "google"
+
   // FCM Push Notifications
-  fcmToken         String?  // Firebase Cloud Messaging device token
-  lastAlertAt      DateTime? // Track when last push notification was sent
-  
+  fcmToken    String? // Firebase Cloud Messaging device token
+  lastAlertAt DateTime? // Track when last push notification was sent
+
   // User preferences
-  sensitivityLevel String   @default("Sensitive") // Sensitive, Normal, Low
-  targetGoal       String   @default("Maintenance") // Maintenance, Bulking, Cutting
-  timezone         String   @default("UTC") // User's timezone for scheduling
-  units            String   @default("metric") // metric or imperial
-  
+  sensitivityLevel String @default("Sensitive") // Sensitive, Normal, Low
+  targetGoal       String @default("Maintenance") // Maintenance, Bulking, Cutting
+  timezone         String @default("UTC") // User's timezone for scheduling
+  units            String @default("metric") // metric or imperial
+
   // Profile
-  avatarUrl        String?  // Profile picture URL
+  avatarUrl           String? // Profile picture URL
   onboardingCompleted Boolean @default(false)
-  
+
   // Notification preferences
   notifyOnLowEnergy    Boolean @default(true)
   notifyMealReminders  Boolean @default(true)
   mealReminderInterval Int     @default(240) // Minutes between reminders
-  
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   mealLogs            MealLog[]
@@ -57,6 +57,9 @@ model User {
   customActivities    CustomActivity[]
   activityGoals       ActivityGoal[]
   dailySummaries      DailySummary[]
+  medications         Medication[]
+  medicationLogs      MedicationLog[]
+  medicationSchedules MedicationSchedule[]
 
   @@index([email])
   @@index([googleId])
@@ -67,24 +70,25 @@ model User {
 // Tracks food consumption with AI-analyzed data
 // ============================================
 model MealLog {
-  id               Int      @id @default(autoincrement())
-  userId           String
-  foodName         String
-  fullnessVolume   Float    // Estimated balloon fill % (0-100)
-  absorptionRate   Float    // G_index from AI (1-100)
-  absorptionProfile String  @default("Balanced") // Fast, Balanced, Slow
-  estimatedSatiety Int      // Minutes this meal lasts at 1.0x burn rate
-  imageUrl         String?
-  category         String   @default("other") // breakfast, lunch, dinner, snack, other
-  calories         Int?     // Optional calorie info
-  protein          Float?   // Grams
-  carbs            Float?   // Grams
-  fat              Float?   // Grams
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  userId            String
+  foodName          String
+  fullnessVolume    Float // Estimated balloon fill % (0-100)
+  absorptionRate    Float // G_index from AI (1-100)
+  absorptionProfile String   @default("Balanced") // Fast, Balanced, Slow
+  estimatedSatiety  Int // Minutes this meal lasts at 1.0x burn rate
+  imageUrl          String?
+  category          String   @default("other") // breakfast, lunch, dinner, snack, other
+  calories          Int? // Optional calorie info
+  protein           Float? // Grams
+  carbs             Float? // Grams
+  fat               Float? // Grams
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medicationLogs MedicationLog[] // Medications taken related to this meal
 
   @@index([userId])
   @@index([createdAt])
@@ -98,8 +102,8 @@ model MealLog {
 model ActivityLog {
   id         Int       @id @default(autoincrement())
   userId     String
-  modeType   String    // Resting, Coding, Studying, GymStrength, GymCardio
-  multiplier Float     // Activity multiplier (1.0, 1.3, 1.6, 3.5, 5.0)
+  modeType   String // Resting, Coding, Studying, GymStrength, GymCardio
+  multiplier Float // Activity multiplier (1.0, 1.3, 1.6, 3.5, 5.0)
   startTime  DateTime  @default(now())
   endTime    DateTime? // Null if currently active
 
@@ -120,9 +124,9 @@ model ActivityLog {
 model EnergySnapshot {
   id              Int      @id @default(autoincrement())
   userId          String
-  volumeRemaining Float    // Current V_remaining (0-100)
+  volumeRemaining Float // Current V_remaining (0-100)
   glycemicIndex   Float    @default(50) // Effective GI at snapshot time
-  etcMinutes      Int?     // Estimated minutes to crash
+  etcMinutes      Int? // Estimated minutes to crash
   snapshotAt      DateTime @default(now())
 
   // Relations - FK to User with cascade delete
@@ -138,19 +142,94 @@ model EnergySnapshot {
 // Track sent notifications for history
 // ============================================
 model Notification {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  type      String   // energy_alert, meal_reminder, activity_reminder
-  title     String
-  body      String
-  data      Json?    // Additional data sent with notification
-  sentAt    DateTime @default(now())
-  read      Boolean  @default(false)
+  id           Int       @id @default(autoincrement())
+  userId       String
+  type         String // energy_alert, meal_reminder, activity_reminder, medication_reminder
+  title        String
+  body         String
+  data         Json? // Additional data sent with notification
+  scheduledFor DateTime? // For future delivery (background job processing)
+  sentAt       DateTime? // Null until actually sent
+  status       String    @default("pending") // pending, scheduled, sent, cancelled, failed
+  read         Boolean   @default(false)
+  createdAt    DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, sentAt])
+  @@index([status, scheduledFor]) // For job processing queue
+}
+
+// ============================================
+// MEDICATION MODEL
+// User-defined medications linked to meal timing
+// ============================================
+model Medication {
+  id              Int      @id @default(autoincrement())
+  userId          String
+  name            String // Medication name (e.g., "Vitamin D", "Metformin")
+  timing          String // "before" or "after"
+  mealType        String   @default("any") // "breakfast", "lunch", "dinner", "any"
+  dosage          String? // Optional dosage info (e.g., "500mg", "2 tablets")
+  notes           String? // User notes
+  reminderEnabled Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs      MedicationLog[]
+  schedules MedicationSchedule[]
+
+  @@unique([userId, name]) // Prevent duplicate medication names per user
+  @@index([userId])
+  @@index([userId, timing, mealType]) // For pre-meal queries
+}
+
+// ============================================
+// MEDICATION LOG MODEL
+// Tracks when medications are taken
+// ============================================
+model MedicationLog {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  medicationId Int
+  mealId       Int? // Optional link to meal that triggered this
+  takenAt      DateTime @default(now())
+  notes        String? // Optional user notes
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  meal       MealLog?   @relation(fields: [mealId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, takenAt]) // For today's logs queries
+  @@index([medicationId, takenAt]) // For adherence tracking
+}
+
+// ============================================
+// MEDICATION SCHEDULE MODEL
+// Recurring medication reminders
+// ============================================
+model MedicationSchedule {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  medicationId Int
+  daysOfWeek   String   @default("1,2,3,4,5,6,7") // Comma-separated: 1=Mon, 7=Sun
+  time         String // HH:MM format (e.g., "08:00", "20:30")
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([enabled, time]) // For scheduler job queries
+  @@index([medicationId])
 }
 
 // ============================================
@@ -161,10 +240,10 @@ model MealFavorite {
   id                Int      @id @default(autoincrement())
   userId            String
   foodName          String
-  fullnessVolume    Float    // Default 0-100
-  absorptionRate    Float    // Default glycemic index 1-100
+  fullnessVolume    Float // Default 0-100
+  absorptionRate    Float // Default glycemic index 1-100
   absorptionProfile String   @default("Balanced")
-  estimatedSatiety  Int      // Default minutes
+  estimatedSatiety  Int // Default minutes
   category          String   @default("other")
   calories          Int?
   protein           Float?
@@ -188,7 +267,7 @@ model MealFavorite {
 model MealTemplate {
   id                Int      @id @default(autoincrement())
   userId            String
-  name              String   // Template name (e.g., "My Breakfast")
+  name              String // Template name (e.g., "My Breakfast")
   description       String?
   foodName          String
   fullnessVolume    Float
@@ -216,11 +295,11 @@ model CustomFood {
   id                Int      @id @default(autoincrement())
   userId            String
   foodName          String
-  fullnessVolume    Float    // Per serving
-  absorptionRate    Float    // Glycemic index
+  fullnessVolume    Float // Per serving
+  absorptionRate    Float // Glycemic index
   absorptionProfile String   @default("Balanced")
-  estimatedSatiety  Int      // Per serving
-  servingSize       String?  // e.g., "1 cup", "100g"
+  estimatedSatiety  Int // Per serving
+  servingSize       String? // e.g., "1 cup", "100g"
   calories          Int?
   protein           Float?
   carbs             Float?
@@ -241,9 +320,9 @@ model CustomFood {
 model CustomActivity {
   id          Int      @id @default(autoincrement())
   userId      String
-  name        String   // Activity name
-  multiplier  Float    // Custom burn rate multiplier
-  icon        String?  // Icon name/emoji
+  name        String // Activity name
+  multiplier  Float // Custom burn rate multiplier
+  icon        String? // Icon name/emoji
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -259,13 +338,13 @@ model CustomActivity {
 // Daily/weekly activity targets
 // ============================================
 model ActivityGoal {
-  id           Int      @id @default(autoincrement())
-  userId       String
-  activityType String   // Activity mode name
-  targetMinutes Int     // Target duration
-  period       String   // daily, weekly
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  userId        String
+  activityType  String // Activity mode name
+  targetMinutes Int // Target duration
+  period        String // daily, weekly
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -278,20 +357,20 @@ model ActivityGoal {
 // Pre-computed daily reports for analytics
 // ============================================
 model DailySummary {
-  id               Int      @id @default(autoincrement())
-  userId           String
-  date             DateTime @db.Date
-  totalMeals       Int      @default(0)
-  totalCalories    Int?
-  avgEnergyLevel   Float?   // Average energy % across the day
-  minEnergyLevel   Float?   // Lowest energy %
-  maxEnergyLevel   Float?   // Highest energy %
-  activityBreakdown Json?   // { "Resting": 480, "Coding": 120, ... } in minutes
-  timeInOptimal    Int?     // Minutes in OPTIMAL state
-  timeInWarning    Int?     // Minutes in WARNING state
-  timeInCritical   Int?     // Minutes in CRITICAL state
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  userId            String
+  date              DateTime @db.Date
+  totalMeals        Int      @default(0)
+  totalCalories     Int?
+  avgEnergyLevel    Float? // Average energy % across the day
+  minEnergyLevel    Float? // Lowest energy %
+  maxEnergyLevel    Float? // Highest energy %
+  activityBreakdown Json? // { "Resting": 480, "Coding": 120, ... } in minutes
+  timeInOptimal     Int? // Minutes in OPTIMAL state
+  timeInWarning     Int? // Minutes in WARNING state
+  timeInCritical    Int? // Minutes in CRITICAL state
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

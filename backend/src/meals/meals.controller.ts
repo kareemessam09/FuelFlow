@@ -20,7 +20,11 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MealsService } from './meals.service';
-import { CreateMealDto, CreateMealManualDto, UpdateMealDto } from './dto/create-meal.dto';
+import {
+  CreateMealDto,
+  CreateMealManualDto,
+  UpdateMealDto,
+} from './dto/create-meal.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '../auth/decorators/current-user.decorator';

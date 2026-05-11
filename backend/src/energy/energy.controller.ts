@@ -26,7 +26,7 @@ export class EnergyController {
    * GET /api/energy/status
    * Get current energy state for authenticated user
    * Uses delta-computation from last snapshot to avoid O(n) replay
-   * 
+   *
    * Optimization: Instead of replaying all meals from scratch on every poll,
    * we use cached snapshots and only compute from the snapshot forward.
    */
@@ -34,7 +34,7 @@ export class EnergyController {
   @UseGuards(JwtAuthGuard)
   async getEnergyStatus(@CurrentUser() user: CurrentUserType) {
     const userId = user.userId;
-    
+
     // Verify user exists
     const userRecord = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -48,7 +48,7 @@ export class EnergyController {
 
     // Try to get latest snapshot for delta-computation
     const latestSnapshot = await this.energyService.getLatestSnapshot(userId);
-    
+
     // Get current activity
     const currentActivity = await this.prisma.activityLog.findFirst({
       where: {
@@ -61,8 +61,9 @@ export class EnergyController {
     const currentMultiplier = currentActivity?.multiplier ?? 1.0;
 
     // Determine if we can use delta-computation
-    const canUseDelta = latestSnapshot && 
-      (now.getTime() - latestSnapshot.snapshotAt.getTime()) < SNAPSHOT_TTL_MS;
+    const canUseDelta =
+      latestSnapshot &&
+      now.getTime() - latestSnapshot.snapshotAt.getTime() < SNAPSHOT_TTL_MS;
 
     let currentVolume: number;
     let effectiveGI: number;
@@ -79,7 +80,11 @@ export class EnergyController {
       effectiveGI = result.effectiveGI;
     } else {
       // Full replay (first request or stale snapshot)
-      const result = await this.computeFullReplay(userId, now, currentMultiplier);
+      const result = await this.computeFullReplay(
+        userId,
+        now,
+        currentMultiplier,
+      );
       currentVolume = result.currentVolume;
       effectiveGI = result.effectiveGI;
     }
@@ -93,9 +98,10 @@ export class EnergyController {
 
     // Save new snapshot for future delta-computation
     // Only save if significant time has passed or no snapshot exists
-    const shouldSaveSnapshot = !latestSnapshot || 
-      (now.getTime() - latestSnapshot.snapshotAt.getTime()) > SNAPSHOT_TTL_MS / 2;
-    
+    const shouldSaveSnapshot =
+      !latestSnapshot ||
+      now.getTime() - latestSnapshot.snapshotAt.getTime() > SNAPSHOT_TTL_MS / 2;
+
     if (shouldSaveSnapshot) {
       await this.energyService.saveSnapshot(
         userId,
@@ -171,7 +177,10 @@ export class EnergyController {
         (meal.createdAt.getTime() - lastEventTime.getTime()) / (1000 * 60);
 
       if (minutesSinceLastEvent > 0) {
-        const multiplier = this.getMultiplierForTime(activityLogs, lastEventTime);
+        const multiplier = this.getMultiplierForTime(
+          activityLogs,
+          lastEventTime,
+        );
         currentVolume = this.energyService.calculateRemainingVolume({
           startVolume: currentVolume,
           glycemicIndex: effectiveGI,
@@ -191,12 +200,16 @@ export class EnergyController {
     }
 
     // Calculate weighted effective GI from all active meals
-    effectiveGI = await this.calculateWeightedGI(userId, now, currentMultiplier);
+    effectiveGI = await this.calculateWeightedGI(
+      userId,
+      now,
+      currentMultiplier,
+    );
 
     // Apply decay from last event to now
     const minutesSinceLastEvent =
       (now.getTime() - lastEventTime.getTime()) / (1000 * 60);
-    
+
     if (minutesSinceLastEvent > 0) {
       currentVolume = this.energyService.calculateRemainingVolume({
         startVolume: currentVolume,
@@ -249,7 +262,10 @@ export class EnergyController {
         (meal.createdAt.getTime() - lastEventTime.getTime()) / (1000 * 60);
 
       if (minutesSinceLastEvent > 0) {
-        const multiplier = this.getMultiplierForTime(activityLogs, lastEventTime);
+        const multiplier = this.getMultiplierForTime(
+          activityLogs,
+          lastEventTime,
+        );
         currentVolume = this.energyService.calculateRemainingVolume({
           startVolume: currentVolume,
           glycemicIndex: effectiveGI,
@@ -269,7 +285,11 @@ export class EnergyController {
     }
 
     // Calculate weighted effective GI from all active meals
-    effectiveGI = await this.calculateWeightedGI(userId, now, currentMultiplier);
+    effectiveGI = await this.calculateWeightedGI(
+      userId,
+      now,
+      currentMultiplier,
+    );
 
     // Apply drain from last event to now
     if (recentMeals.length > 0) {
@@ -290,7 +310,7 @@ export class EnergyController {
   /**
    * Calculate weighted effective GI from all active meals
    * Uses the calculateEffectiveGlycemicIndex method from EnergyService
-   * 
+   *
    * This properly handles overlapping meals by weighting based on
    * remaining volume contribution of each meal.
    */
@@ -336,7 +356,9 @@ export class EnergyController {
       .filter((m) => m.remainingVolume > 0); // Only include meals with remaining contribution
 
     // Use the weighted GI calculation from EnergyService
-    return this.energyService.calculateEffectiveGlycemicIndex(mealsWithRemaining);
+    return this.energyService.calculateEffectiveGlycemicIndex(
+      mealsWithRemaining,
+    );
   }
 
   /**

@@ -65,9 +65,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
 
     // Log all errors
-    this.logger.warn(
-      `${request.method} ${request.url} ${status} - ${message}`,
-    );
+    this.logger.warn(`${request.method} ${request.url} ${status} - ${message}`);
 
     response.status(status).json(errorResponse);
   }

@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import type { Request, Response, NextFunction } from 'express';
+import { networkInterfaces } from 'os';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -10,8 +11,9 @@ async function bootstrap() {
 
   // Enable CORS for Flutter mobile app
   const corsOrigins =
-    process.env.CORS_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) ??
-    [];
+    process.env.CORS_ORIGINS?.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? [];
 
   app.enableCors({
     origin: (
@@ -40,7 +42,10 @@ async function bootstrap() {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=()',
+    );
     next();
   });
 
@@ -66,6 +71,14 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
 
   logger.log(`FuelFlow API running on http://localhost:${port}/api`);
+  const interfaces = networkInterfaces();
+  const lanUrls = Object.values(interfaces)
+    .flatMap((entries) => entries ?? [])
+    .filter((entry) => entry.family === 'IPv4' && !entry.internal)
+    .map((entry) => `http://${entry.address}:${port}/api`);
+  if (lanUrls.length > 0) {
+    logger.log(`FuelFlow API LAN URLs: ${lanUrls.join(', ')}`);
+  }
   logger.log(`Environment: ${process.env.NODE_ENV ?? 'development'}`);
 }
 bootstrap();

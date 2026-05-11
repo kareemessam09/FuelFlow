@@ -13,9 +13,10 @@ class MealsScreen extends StatefulWidget {
   State<MealsScreen> createState() => _MealsScreenState();
 }
 
-class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStateMixin {
+class _MealsScreenState extends State<MealsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
@@ -24,7 +25,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
     // Load today's meals initially
     context.read<MealsBloc>().add(MealsLoadToday());
   }
-  
+
   void _onTabChanged() {
     if (_tabController.indexIsChanging) {
       if (_tabController.index == 0) {
@@ -34,7 +35,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
       }
     }
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -49,7 +50,13 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
         title: const Text('MEAL HISTORY'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -61,10 +68,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildTodayMeals(),
-          _buildAllMeals(),
-        ],
+        children: [_buildTodayMeals(), _buildAllMeals()],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/meal-capture'),
@@ -78,17 +82,13 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
     return BlocBuilder<MealsBloc, MealsState>(
       builder: (context, state) {
         if (state is MealsLoading) {
-          return const StateFeedback(
-            icon: Icons.restaurant_menu_rounded,
-            title: 'Loading today\'s meals',
-            description: 'We\'re preparing your latest meal timeline.',
-          );
+          return const SkeletonList(itemCount: 4);
         } else if (state is MealsLoaded && state.isTodayOnly) {
-          return _buildMealList(state.meals);
+          return _buildMealList(state.meals, isToday: true);
         } else if (state is MealsError) {
           return _buildError(state.message, true);
         }
-        return _buildMealList([]);
+        return _buildMealList([], isToday: true);
       },
     );
   }
@@ -97,66 +97,42 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
     return BlocBuilder<MealsBloc, MealsState>(
       builder: (context, state) {
         if (state is MealsLoading) {
-          return const StateFeedback(
-            icon: Icons.history_rounded,
-            title: 'Loading meal history',
-            description: 'Fetching your complete meal log.',
-          );
+          return const SkeletonList(itemCount: 6);
         } else if (state is MealsLoaded && !state.isTodayOnly) {
-          return _buildMealList(state.meals);
+          return _buildMealList(state.meals, isToday: false);
         } else if (state is MealsError) {
           return _buildError(state.message, false);
         }
-        return _buildMealList([]);
+        return _buildMealList([], isToday: false);
       },
     );
   }
-  
+
   Widget _buildError(String message, bool isToday) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: AppColors.primary),
-          const SizedBox(height: 16),
-          Text(
-            'Error loading meals',
-            style: TextStyle(
-              fontFamily: 'SpaceGrotesk',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          BrutalButton(
-            onPressed: () {
-              if (isToday) {
-                context.read<MealsBloc>().add(MealsLoadToday());
-              } else {
-                context.read<MealsBloc>().add(MealsLoadHistory());
-              }
-            },
-            label: 'RETRY',
-          ),
-        ],
-      ),
+    return StateFeedback(
+      icon: Icons.error_outline_rounded,
+      title: 'Couldn\'t load meals',
+      description: message,
+      actionLabel: 'RETRY',
+      onAction: () {
+        if (isToday) {
+          context.read<MealsBloc>().add(MealsLoadToday());
+        } else {
+          context.read<MealsBloc>().add(MealsLoadHistory());
+        }
+      },
     );
   }
 
-  Widget _buildMealList(List<MealLog> meals) {
+  Widget _buildMealList(List<MealLog> meals, {bool isToday = false}) {
     if (meals.isEmpty) {
       return StateFeedback(
-        icon: Icons.restaurant_rounded,
-        title: 'No meals logged yet',
-        description: 'Start by adding your first meal to see trends.',
-        actionLabel: 'ADD FIRST MEAL',
+        icon: isToday ? Icons.wb_sunny_rounded : Icons.restaurant_rounded,
+        title: isToday ? 'No meals today' : 'No meals logged yet',
+        description: isToday
+            ? 'Snap a photo of your next meal to start tracking.'
+            : 'Your complete meal history will appear here.',
+        actionLabel: 'ADD MEAL',
         onAction: () => context.push('/meal-capture'),
       );
     }
@@ -192,15 +168,12 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
             child: meal.imageUrl != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      meal.imageUrl!,
-                      fit: BoxFit.cover,
-                    ),
+                    child: Image.network(meal.imageUrl!, fit: BoxFit.cover),
                   )
                 : const Icon(Icons.restaurant, color: Colors.white),
           ),
           const SizedBox(width: 16),
-          
+
           // Meal info
           Expanded(
             child: Column(
@@ -226,7 +199,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
               ],
             ),
           ),
-          
+
           // Time
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -250,7 +223,7 @@ class _MealsScreenState extends State<MealsScreen> with SingleTickerProviderStat
   String _formatTime(DateTime time) {
     final now = DateTime.now();
     final diff = now.difference(time);
-    
+
     if (diff.inMinutes < 60) {
       return '${diff.inMinutes}m ago';
     } else if (diff.inHours < 24) {

@@ -19,10 +19,9 @@ abstract class AuthRepository {
     String? name,
   });
 
-  Future<AuthResult> login({
-    required String email,
-    required String password,
-  });
+  Future<AuthResult> login({required String email, required String password});
+
+  Future<AuthResult> googleSignIn({required String idToken});
 
   Future<User> getMe();
   Future<void> forgotPassword({required String email});
@@ -82,6 +81,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<AuthResult> googleSignIn({required String idToken}) async {
+    try {
+      final response = await _dio.post(
+        '/auth/google',
+        data: {'idToken': idToken},
+      );
+      return _parseAuthResult(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  @override
   Future<User> getMe() async {
     try {
       final response = await _dio.post(AppConstants.authMeEndpoint);
@@ -95,10 +107,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> forgotPassword({required String email}) async {
     try {
-      await _dio.post(
-        '/auth/forgot-password',
-        data: {'email': email},
-      );
+      await _dio.post('/auth/forgot-password', data: {'email': email});
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -112,10 +121,7 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await _dio.post(
         '/auth/change-password',
-        data: {
-          'currentPassword': currentPassword,
-          'newPassword': newPassword,
-        },
+        data: {'currentPassword': currentPassword, 'newPassword': newPassword},
       );
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -131,11 +137,7 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await _dio.post(
         '/auth/reset-password',
-        data: {
-          'email': email,
-          'token': token,
-          'newPassword': newPassword,
-        },
+        data: {'email': email, 'token': token, 'newPassword': newPassword},
       );
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -161,6 +163,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   User _parseUser(Map<String, dynamic> json) {
+    final createdAtRaw = json['createdAt'];
+    final createdAt = createdAtRaw is String
+        ? (DateTime.tryParse(createdAtRaw) ?? DateTime.now())
+        : (createdAtRaw is DateTime ? createdAtRaw : DateTime.now());
+
     return User(
       id: json['id'] as String,
       email: json['email'] as String?,
@@ -172,15 +179,17 @@ class AuthRepositoryImpl implements AuthRepository {
           ? TargetGoal.fromString(json['targetGoal'] as String)
           : TargetGoal.maintenance,
       units: (json['units'] as String?) ?? 'metric',
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : DateTime.now(),
+      createdAt: createdAt,
+      notifyOnLowEnergy: (json['notifyOnLowEnergy'] as bool?) ?? true,
+      notifyMealReminders: (json['notifyMealReminders'] as bool?) ?? true,
     );
   }
 
   Exception _handleDioError(DioException e) {
     if (e.type == DioExceptionType.connectionError) {
-      return Exception('No internet connection. Make sure the backend is running.');
+      return Exception(
+        'No internet connection. Make sure the backend is running.',
+      );
     }
     if (e.response?.statusCode == 409) {
       return Exception('An account with this email already exists.');
@@ -191,6 +200,8 @@ class AuthRepositoryImpl implements AuthRepository {
     final message = e.response?.data?['message'];
     if (message is String) return Exception(message);
     if (message is List) return Exception(message.join('. '));
-    return Exception('Authentication failed (${e.response?.statusCode ?? 'no response'})');
+    return Exception(
+      'Authentication failed (${e.response?.statusCode ?? 'no response'})',
+    );
   }
 }

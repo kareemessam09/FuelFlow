@@ -15,13 +15,21 @@ import { CustomActivitiesService } from './custom-activities.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '../auth/decorators/current-user.decorator';
-import { CreateCustomActivityDto, CreateActivityGoalDto } from './dto/create-custom-activity.dto';
-import { UpdateCustomActivityDto, UpdateActivityGoalDto } from './dto/update-custom-activity.dto';
+import {
+  CreateCustomActivityDto,
+  CreateActivityGoalDto,
+} from './dto/create-custom-activity.dto';
+import {
+  UpdateCustomActivityDto,
+  UpdateActivityGoalDto,
+} from './dto/update-custom-activity.dto';
 
 @Controller('custom-activities')
 @UseGuards(JwtAuthGuard)
 export class CustomActivitiesController {
-  constructor(private readonly customActivitiesService: CustomActivitiesService) {}
+  constructor(
+    private readonly customActivitiesService: CustomActivitiesService,
+  ) {}
 
   // ============================================
   // CUSTOM ACTIVITIES
@@ -62,7 +70,11 @@ export class CustomActivitiesController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCustomActivityDto,
   ) {
-    return this.customActivitiesService.updateCustomActivity(user.userId, id, dto);
+    return this.customActivitiesService.updateCustomActivity(
+      user.userId,
+      id,
+      dto,
+    );
   }
 
   @Delete(':id')
@@ -110,7 +122,11 @@ export class CustomActivitiesController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateActivityGoalDto,
   ) {
-    return this.customActivitiesService.updateActivityGoal(user.userId, id, dto);
+    return this.customActivitiesService.updateActivityGoal(
+      user.userId,
+      id,
+      dto,
+    );
   }
 
   @Delete('goals/:id')

@@ -2,14 +2,25 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MedicationsService } from '../medications/medications.service';
 
 @Injectable()
 export class JobsService {
   private readonly logger = new Logger(JobsService.name);
+  private static readonly WEEKDAY_TO_ISO_DAY: Record<string, number> = {
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+    Sun: 7,
+  };
 
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private medicationsService: MedicationsService,
   ) {}
 
   /**
@@ -45,7 +56,11 @@ export class JobsService {
           orderBy: { snapshotAt: 'desc' },
         });
 
-        if (snapshot && snapshot.volumeRemaining <= 30 && snapshot.volumeRemaining > 0) {
+        if (
+          snapshot &&
+          snapshot.volumeRemaining <= 30 &&
+          snapshot.volumeRemaining > 0
+        ) {
           await this.notificationsService.sendEnergyAlert(
             user.id,
             snapshot.volumeRemaining,
@@ -120,7 +135,11 @@ export class JobsService {
       });
 
       for (const user of users) {
-        await this.generateDailySummaryForUser(user.id, yesterday, endOfYesterday);
+        await this.generateDailySummaryForUser(
+          user.id,
+          yesterday,
+          endOfYesterday,
+        );
       }
 
       this.logger.log(`Generated daily summaries for ${users.length} users`);
@@ -129,7 +148,11 @@ export class JobsService {
     }
   }
 
-  async generateDailySummaryForUser(userId: string, startDate: Date, endDate: Date) {
+  async generateDailySummaryForUser(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
     // Get meals for the day
     const meals = await this.prisma.mealLog.findMany({
       where: {
@@ -159,9 +182,12 @@ export class JobsService {
     for (const activity of activities) {
       const endTime = activity.endTime || endDate;
       const effectiveEnd = endTime > endDate ? endDate : endTime;
-      const effectiveStart = activity.startTime < startDate ? startDate : activity.startTime;
-      const duration = (effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60);
-      activityBreakdown[activity.modeType] = (activityBreakdown[activity.modeType] || 0) + duration;
+      const effectiveStart =
+        activity.startTime < startDate ? startDate : activity.startTime;
+      const duration =
+        (effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60);
+      activityBreakdown[activity.modeType] =
+        (activityBreakdown[activity.modeType] || 0) + duration;
     }
 
     // Calculate energy stats
@@ -173,7 +199,7 @@ export class JobsService {
     let timeInCritical = 0;
 
     if (snapshots.length > 0) {
-      const energyLevels = snapshots.map(s => s.volumeRemaining);
+      const energyLevels = snapshots.map((s) => s.volumeRemaining);
       avgEnergy = energyLevels.reduce((a, b) => a + b, 0) / energyLevels.length;
       minEnergy = Math.min(...energyLevels);
       maxEnergy = Math.max(...energyLevels);
@@ -187,7 +213,10 @@ export class JobsService {
     }
 
     // Calculate total calories
-    const totalCalories = meals.reduce((sum, meal) => sum + (meal.calories || 0), 0);
+    const totalCalories = meals.reduce(
+      (sum, meal) => sum + (meal.calories || 0),
+      0,
+    );
 
     // Upsert daily summary
     const dateOnly = new Date(startDate);
@@ -279,9 +308,235 @@ export class JobsService {
 
       // For each active user, we would calculate and save their current energy state
       // This is a simplified version - in production, you'd call the energy calculation service
-      this.logger.debug(`Updated snapshots for ${activeUsers.length} active users`);
+      this.logger.debug(
+        `Updated snapshots for ${activeUsers.length} active users`,
+      );
     } catch (error) {
       this.logger.error('Error updating energy snapshots', error);
+    }
+  }
+
+  /**
+   * Process scheduled medication reminders (runs every 15 minutes)
+   * Checks MedicationSchedule table and sends reminders for current time slot
+   */
+  @Cron('*/15 * * * *')
+  async processMedicationReminders() {
+    this.logger.debug('Processing medication reminders...');
+
+    try {
+      const now = new Date();
+
+      // Find all enabled schedules for current day and time window
+      const schedules = await this.prisma.medicationSchedule.findMany({
+        where: {
+          enabled: true,
+        },
+        include: {
+          medication: true,
+          user: {
+            select: {
+              id: true,
+              fcmToken: true,
+              timezone: true,
+            },
+          },
+        },
+      });
+
+      for (const schedule of schedules) {
+        const { day: currentDay, roundedTime: currentTime } =
+          this.getUserLocalContext(now, schedule.user.timezone ?? undefined);
+
+        // Check if current day is in schedule
+        const scheduledDays = schedule.daysOfWeek
+          .split(',')
+          .map((value) => Number(value.trim()))
+          .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7);
+        if (!scheduledDays.includes(currentDay)) continue;
+
+        // Check if time matches (within 15-minute window)
+        const schedTimeRounded = this.getScheduleQuarterHour(schedule.time);
+        if (!schedTimeRounded) continue;
+        if (schedTimeRounded !== currentTime) continue;
+
+        // Check if already sent in last 2 hours to avoid duplicates
+        const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+        const recentNotification = await this.prisma.notification.findFirst({
+          where: {
+            userId: schedule.userId,
+            type: 'medication_reminder',
+            createdAt: { gte: twoHoursAgo },
+            data: {
+              path: ['medicationId'],
+              equals: schedule.medicationId,
+            },
+          },
+        });
+
+        if (recentNotification) continue;
+
+        // Send reminder
+        await this.notificationsService.sendMedicationReminder(
+          schedule.userId,
+          schedule.medication,
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error processing medication reminders', error);
+    }
+  }
+
+  /**
+   * Process scheduled notifications (runs every 5 minutes)
+   * Sends notifications that are scheduled for the current time
+   */
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async processScheduledNotifications() {
+    this.logger.debug('Processing scheduled notifications...');
+
+    try {
+      const now = new Date();
+      const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+
+      // Find notifications scheduled for now or past (not yet sent)
+      const pendingNotifications = await this.prisma.notification.findMany({
+        where: {
+          status: 'scheduled',
+          scheduledFor: {
+            lte: fiveMinutesFromNow,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              fcmToken: true,
+            },
+          },
+        },
+        take: 50, // Process in batches
+      });
+
+      for (const notification of pendingNotifications) {
+        try {
+          if (notification.user.fcmToken) {
+            await this.notificationsService.sendToToken(
+              notification.userId,
+              notification.user.fcmToken,
+              {
+                title: notification.title,
+                body: notification.body,
+                data: notification.data as Record<string, string> | undefined,
+              },
+              notification.type,
+            );
+
+            // Mark as sent
+            await this.prisma.notification.update({
+              where: { id: notification.id },
+              data: {
+                status: 'sent',
+                sentAt: new Date(),
+              },
+            });
+          } else {
+            // No FCM token, mark as failed
+            await this.prisma.notification.update({
+              where: { id: notification.id },
+              data: {
+                status: 'failed',
+              },
+            });
+          }
+        } catch (error) {
+          this.logger.error(
+            `Failed to send notification ${notification.id}`,
+            error,
+          );
+          await this.prisma.notification.update({
+            where: { id: notification.id },
+            data: {
+              status: 'failed',
+            },
+          });
+        }
+      }
+
+      if (pendingNotifications.length > 0) {
+        this.logger.log(
+          `Processed ${pendingNotifications.length} scheduled notifications`,
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error processing scheduled notifications', error);
+    }
+  }
+
+  private getScheduleQuarterHour(time: string): string | null {
+    const [hourRaw, minuteRaw] = time.split(':');
+    const hour = Number(hourRaw);
+    const minute = Number(minuteRaw);
+
+    if (
+      !Number.isInteger(hour) ||
+      !Number.isInteger(minute) ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      this.logger.warn(`Invalid medication schedule time format: "${time}"`);
+      return null;
+    }
+
+    return this.getRoundedQuarterHour(hour, minute);
+  }
+
+  private getRoundedQuarterHour(hour: number, minute: number): string {
+    const roundedMinute = Math.floor(minute / 15) * 15;
+    return `${hour.toString().padStart(2, '0')}:${roundedMinute.toString().padStart(2, '0')}`;
+  }
+
+  private getUserLocalContext(
+    now: Date,
+    timezone?: string,
+  ): { day: number; roundedTime: string } {
+    const safeTimezone = timezone?.trim() || 'UTC';
+
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: safeTimezone,
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      const parts = formatter.formatToParts(now);
+
+      const weekday = parts.find((part) => part.type === 'weekday')?.value;
+      const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+      const minute = Number(parts.find((part) => part.type === 'minute')?.value);
+
+      if (!Number.isInteger(hour) || !Number.isInteger(minute)) {
+        throw new Error(
+          `Could not parse hour/minute for timezone "${safeTimezone}"`,
+        );
+      }
+
+      const day = JobsService.WEEKDAY_TO_ISO_DAY[weekday ?? ''] ?? 1;
+      return {
+        day,
+        roundedTime: this.getRoundedQuarterHour(hour, minute),
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Falling back to server time for timezone "${safeTimezone}"`,
+      );
+      const fallbackDay = now.getDay() === 0 ? 7 : now.getDay();
+      return {
+        day: fallbackDay,
+        roundedTime: this.getRoundedQuarterHour(now.getHours(), now.getMinutes()),
+      };
     }
   }
 }

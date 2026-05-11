@@ -104,6 +104,17 @@ class AppConstants {
   static const String mealHistoryEndpoint = '/meals/my';
   static const String mealTodayEndpoint = '/meals/my/today';
 
+  // Medications
+  static const String medicationsEndpoint = '/medications';
+  static const String medicationLogsEndpoint = '/medications/logs';
+  static const String medicationTodayLogsEndpoint = '/medications/logs/today';
+  static const String medicationHistoryLogsEndpoint =
+      '/medications/logs/history';
+  static const String medicationCheckBeforeMealEndpoint =
+      '/medications/check-before-meal';
+  static const String medicationAfterMealEndpoint = '/medications/after-meal';
+  static const String medicationSchedulesEndpoint = '/medications/schedules';
+
   // Activity
   static const String activityToggleEndpoint = '/activity/toggle';
   static const String activityStatusEndpoint = '/activity/status';

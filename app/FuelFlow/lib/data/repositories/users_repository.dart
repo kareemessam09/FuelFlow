@@ -19,9 +19,7 @@ abstract class UsersRepository {
     required String displayName,
   });
 
-  Future<void> deleteUser({
-    required String userId,
-  });
+  Future<void> deleteUser({required String userId});
 }
 
 class UsersRepositoryImpl implements UsersRepository {
@@ -88,9 +86,7 @@ class UsersRepositoryImpl implements UsersRepository {
   }
 
   @override
-  Future<void> deleteUser({
-    required String userId,
-  }) async {
+  Future<void> deleteUser({required String userId}) async {
     try {
       await _dio.delete('${AppConstants.usersEndpoint}/$userId');
     } on DioException catch (e) {
@@ -101,6 +97,11 @@ class UsersRepositoryImpl implements UsersRepository {
   }
 
   User _parseUser(Map<String, dynamic> json) {
+    final createdAtRaw = json['createdAt'];
+    final createdAt = createdAtRaw is String
+        ? (DateTime.tryParse(createdAtRaw) ?? DateTime.now())
+        : (createdAtRaw is DateTime ? createdAtRaw : DateTime.now());
+
     return User(
       id: json['id'] as String,
       email: json['email'] as String?,
@@ -112,7 +113,9 @@ class UsersRepositoryImpl implements UsersRepository {
           ? TargetGoal.fromString(json['targetGoal'] as String)
           : TargetGoal.maintenance,
       units: (json['units'] as String?) ?? 'metric',
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: createdAt,
+      notifyOnLowEnergy: (json['notifyOnLowEnergy'] as bool?) ?? true,
+      notifyMealReminders: (json['notifyMealReminders'] as bool?) ?? true,
     );
   }
 }

@@ -24,13 +24,15 @@ class UserAdapterAdapter extends TypeAdapter<UserAdapter> {
       targetGoalIndex: fields[4] as int,
       createdAt: fields[5] as DateTime,
       units: (fields[6] as String?) ?? 'metric',
+      notifyOnLowEnergy: (fields[7] as bool?) ?? true,
+      notifyMealReminders: (fields[8] as bool?) ?? true,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserAdapter obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +46,11 @@ class UserAdapterAdapter extends TypeAdapter<UserAdapter> {
       ..writeByte(5)
       ..write(obj.createdAt)
       ..writeByte(6)
-      ..write(obj.units);
+      ..write(obj.units)
+      ..writeByte(7)
+      ..write(obj.notifyOnLowEnergy)
+      ..writeByte(8)
+      ..write(obj.notifyMealReminders);
   }
 
   @override

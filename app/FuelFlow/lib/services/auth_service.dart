@@ -1,6 +1,7 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// AuthService — persists JWT token and basic user info via SharedPreferences.
+/// AuthService — persists JWT token in secure storage and basic user info in SharedPreferences.
 /// All repositories use this to attach the Authorization header.
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -14,18 +15,32 @@ class AuthService {
   static const _keyOnboardingCompleted = 'onboarding_completed';
 
   SharedPreferences? _prefs;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  String? _cachedToken;
 
   Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
+    _cachedToken = await _secureStorage.read(key: _keyToken);
+    if ((_cachedToken == null || _cachedToken!.isEmpty) &&
+        _prefs!.containsKey(_keyToken)) {
+      final legacyToken = _prefs!.getString(_keyToken);
+      if (legacyToken != null && legacyToken.isNotEmpty) {
+        await _secureStorage.write(key: _keyToken, value: legacyToken);
+        await _prefs!.remove(_keyToken);
+        _cachedToken = legacyToken;
+      }
+    }
   }
 
   // ── Token ──────────────────────────────────────────────
   Future<void> saveToken(String token) async {
     await _ensureInit();
-    await _prefs!.setString(_keyToken, token);
+    _cachedToken = token;
+    await _secureStorage.write(key: _keyToken, value: token);
+    await _prefs!.remove(_keyToken);
   }
 
-  String? getToken() => _prefs?.getString(_keyToken);
+  String? getToken() => _cachedToken;
 
   bool get isAuthenticated {
     final token = getToken();
@@ -59,6 +74,8 @@ class AuthService {
   // ── Logout ─────────────────────────────────────────────
   Future<void> clearAll() async {
     await _ensureInit();
+    _cachedToken = null;
+    await _secureStorage.delete(key: _keyToken);
     await _prefs!.remove(_keyToken);
     await _prefs!.remove(_keyUserId);
     await _prefs!.remove(_keyUserEmail);
@@ -66,6 +83,8 @@ class AuthService {
   }
 
   Future<void> _ensureInit() async {
-    _prefs ??= await SharedPreferences.getInstance();
+    if (_prefs == null) {
+      await init();
+    }
   }
 }

@@ -21,9 +21,11 @@ export class NotificationsService implements OnModuleInit {
 
   private initializeFirebase() {
     const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
-    
+
     if (!serviceAccount) {
-      this.logger.warn('FIREBASE_SERVICE_ACCOUNT not configured. Push notifications disabled.');
+      this.logger.warn(
+        'FIREBASE_SERVICE_ACCOUNT not configured. Push notifications disabled.',
+      );
       return;
     }
 
@@ -53,7 +55,11 @@ export class NotificationsService implements OnModuleInit {
   ): Promise<boolean> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { fcmToken: true, notifyOnLowEnergy: true, notifyMealReminders: true },
+      select: {
+        fcmToken: true,
+        notifyOnLowEnergy: true,
+        notifyMealReminders: true,
+      },
     });
 
     if (!user?.fcmToken) {
@@ -112,7 +118,7 @@ export class NotificationsService implements OnModuleInit {
       };
 
       await admin.messaging().send(message);
-      
+
       // Save to notification history
       await this.prisma.notification.create({
         data: {
@@ -128,17 +134,19 @@ export class NotificationsService implements OnModuleInit {
       return true;
     } catch (error: any) {
       this.logger.error(`Failed to send notification: ${error.message}`);
-      
+
       // If token is invalid, clear it
-      if (error.code === 'messaging/invalid-registration-token' ||
-          error.code === 'messaging/registration-token-not-registered') {
+      if (
+        error.code === 'messaging/invalid-registration-token' ||
+        error.code === 'messaging/registration-token-not-registered'
+      ) {
         await this.prisma.user.update({
           where: { id: userId },
           data: { fcmToken: null },
         });
         this.logger.warn(`Cleared invalid FCM token for user ${userId}`);
       }
-      
+
       return false;
     }
   }
@@ -164,7 +172,7 @@ export class NotificationsService implements OnModuleInit {
     };
 
     const sent = await this.sendToUser(userId, payload, 'energy_alert');
-    
+
     if (sent) {
       await this.prisma.user.update({
         where: { id: userId },
@@ -189,6 +197,31 @@ export class NotificationsService implements OnModuleInit {
     };
 
     return this.sendToUser(userId, payload, 'meal_reminder');
+  }
+
+  /**
+   * Send medication reminder notification
+   */
+  async sendMedicationReminder(
+    userId: string,
+    medication: { id: number; name: string; dosage?: string | null; timing: string },
+  ): Promise<boolean> {
+    const timingText = medication.timing === 'before' ? 'before' : 'after';
+    const dosageText = medication.dosage ? ` (${medication.dosage})` : '';
+
+    const payload: NotificationPayload = {
+      title: '💊 Medication Reminder',
+      body: `Time to take ${medication.name}${dosageText} ${timingText} your meal`,
+      data: {
+        type: 'medication_reminder',
+        medicationId: medication.id.toString(),
+        medicationName: medication.name,
+        timing: medication.timing,
+        action: 'log_medication',
+      },
+    };
+
+    return this.sendToUser(userId, payload, 'medication_reminder');
   }
 
   /**

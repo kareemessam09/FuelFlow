@@ -57,7 +57,10 @@ export class ActivityController {
     @CurrentUser() user: CurrentUserType,
     @Query('limit') limit?: string,
   ) {
-    return this.activityService.getHistory(user.userId, limit ? parseInt(limit) : 20);
+    return this.activityService.getHistory(
+      user.userId,
+      limit ? parseInt(limit) : 20,
+    );
   }
 
   /**

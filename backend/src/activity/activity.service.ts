@@ -65,8 +65,9 @@ export class ActivityService {
     );
 
     // Calculate current energy state
-    const energyState =
-      await this.mealsService.calculateCurrentEnergyState(dto.userId);
+    const energyState = await this.mealsService.calculateCurrentEnergyState(
+      dto.userId,
+    );
 
     // Calculate alert time
     const alertTime = this.energyService.calculateAlertTime(

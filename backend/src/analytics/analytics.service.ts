@@ -69,8 +69,19 @@ export class AnalyticsService {
    */
   async getMonthlyReport(userId: string, monthsAgo: number = 0) {
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() - monthsAgo + 1, 0, 23, 59, 59);
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() - monthsAgo,
+      1,
+    );
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() - monthsAgo + 1,
+      0,
+      23,
+      59,
+      59,
+    );
 
     const [mealStats, activityStats, dailySummaries] = await Promise.all([
       this.getMealStats(userId, startOfMonth, endOfMonth),
@@ -94,7 +105,11 @@ export class AnalyticsService {
   /**
    * Get meal statistics for a date range
    */
-  async getMealStats(userId: string, startDate: Date, endDate: Date): Promise<MealStats> {
+  async getMealStats(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<MealStats> {
     const meals = await this.prisma.mealLog.findMany({
       where: {
         userId,
@@ -114,8 +129,10 @@ export class AnalyticsService {
       };
     }
 
-    const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const daysDiff = Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
     // Calculate top foods
     const foodCounts: Record<string, number> = {};
     const categoryCount: Record<string, number> = {};
@@ -147,7 +164,11 @@ export class AnalyticsService {
   /**
    * Get activity statistics for a date range
    */
-  async getActivityStats(userId: string, startDate: Date, endDate: Date): Promise<ActivityStats> {
+  async getActivityStats(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<ActivityStats> {
     const activities = await this.prisma.activityLog.findMany({
       where: {
         userId,
@@ -169,9 +190,11 @@ export class AnalyticsService {
 
     for (const activity of activities) {
       const endTime = activity.endTime || new Date();
-      const duration = (endTime.getTime() - activity.startTime.getTime()) / (1000 * 60);
-      
-      modeBreakdown[activity.modeType] = (modeBreakdown[activity.modeType] || 0) + duration;
+      const duration =
+        (endTime.getTime() - activity.startTime.getTime()) / (1000 * 60);
+
+      modeBreakdown[activity.modeType] =
+        (modeBreakdown[activity.modeType] || 0) + duration;
       totalMinutes += duration;
     }
 
@@ -179,7 +202,7 @@ export class AnalyticsService {
       totalActivities: activities.length,
       totalMinutes: Math.round(totalMinutes),
       modeBreakdown: Object.fromEntries(
-        Object.entries(modeBreakdown).map(([k, v]) => [k, Math.round(v)])
+        Object.entries(modeBreakdown).map(([k, v]) => [k, Math.round(v)]),
       ),
       avgSessionDuration: totalMinutes / activities.length,
     };
@@ -344,11 +367,19 @@ export class AnalyticsService {
       orderBy: { startTime: 'desc' },
     });
 
-    const headers = ['id', 'modeType', 'multiplier', 'startTime', 'endTime', 'durationMinutes'];
+    const headers = [
+      'id',
+      'modeType',
+      'multiplier',
+      'startTime',
+      'endTime',
+      'durationMinutes',
+    ];
 
     const rows = activities.map((activity) => {
       const endTime = activity.endTime || new Date();
-      const duration = (endTime.getTime() - activity.startTime.getTime()) / (1000 * 60);
+      const duration =
+        (endTime.getTime() - activity.startTime.getTime()) / (1000 * 60);
       return [
         activity.id,
         activity.modeType,
@@ -379,7 +410,11 @@ export class AnalyticsService {
     });
 
     const mealStats = await this.getMealStats(userId, startDate, new Date());
-    const activityStats = await this.getActivityStats(userId, startDate, new Date());
+    const activityStats = await this.getActivityStats(
+      userId,
+      startDate,
+      new Date(),
+    );
 
     // Simple goal progress calculation
     let progressScore = 50; // Neutral
@@ -391,10 +426,18 @@ export class AnalyticsService {
     } else if (goal === 'Cutting') {
       // Lower fullness, more activity = better
       const activityBonus = Math.min(30, activityStats.totalMinutes / 100);
-      progressScore = Math.min(100, (100 - mealStats.avgFullnessVolume) / 2 + activityBonus + 40);
+      progressScore = Math.min(
+        100,
+        (100 - mealStats.avgFullnessVolume) / 2 + activityBonus + 40,
+      );
     } else {
       // Maintenance: balanced approach
-      progressScore = Math.min(100, 50 + (mealStats.avgMealsPerDay >= 3 ? 20 : 0) + (activityStats.totalMinutes > 60 * days ? 20 : 0));
+      progressScore = Math.min(
+        100,
+        50 +
+          (mealStats.avgMealsPerDay >= 3 ? 20 : 0) +
+          (activityStats.totalMinutes > 60 * days ? 20 : 0),
+      );
     }
 
     return {
@@ -403,7 +446,11 @@ export class AnalyticsService {
       progressScore: Math.round(progressScore),
       mealStats,
       activityStats,
-      recommendations: this.getGoalRecommendations(goal, mealStats, activityStats),
+      recommendations: this.getGoalRecommendations(
+        goal,
+        mealStats,
+        activityStats,
+      ),
     };
   }
 
@@ -426,7 +473,9 @@ export class AnalyticsService {
         recommendations.push('Try smaller portion sizes');
       }
       if (activityStats.totalMinutes < 150) {
-        recommendations.push('Increase physical activity (aim for 150+ min/week)');
+        recommendations.push(
+          'Increase physical activity (aim for 150+ min/week)',
+        );
       }
       if (mealStats.avgGlycemicIndex > 60) {
         recommendations.push('Choose lower GI foods for sustained energy');

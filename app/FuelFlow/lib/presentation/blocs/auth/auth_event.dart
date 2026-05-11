@@ -27,6 +27,10 @@ class AuthRegister extends AuthEvent {
   List<Object?> get props => [email, password, name];
 }
 
+class AuthGoogleSignIn extends AuthEvent {
+  const AuthGoogleSignIn();
+}
+
 class AuthLogout extends AuthEvent {
   const AuthLogout();
 }

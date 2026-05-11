@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/constants.dart';
 import '../../../domain/entities/entities.dart';
 
@@ -80,7 +81,7 @@ class ActivitySelectorSheet extends StatelessWidget {
             const Divider(color: AppColors.border, height: 1),
 
             // Activity options
-            Expanded(
+            Flexible(
               child: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -89,7 +90,10 @@ class ActivitySelectorSheet extends StatelessWidget {
                       return _ActivityModeItem(
                         mode: mode,
                         isSelected: mode == currentMode,
-                        onTap: () => onModeSelected(mode),
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          onModeSelected(mode);
+                        },
                       );
                     }).toList(),
                   ),
@@ -223,17 +227,17 @@ class _ActivityModeItem extends StatelessWidget {
   IconData _getIconForMode(ActivityMode mode) {
     switch (mode) {
       case ActivityMode.resting:
-        return Icons.weekend;
+        return Icons.weekend_rounded;
       case ActivityMode.coding:
-        return Icons.code;
+        return Icons.code_rounded;
       case ActivityMode.studying:
-        return Icons.menu_book;
+        return Icons.menu_book_rounded;
       case ActivityMode.gymStrength:
-        return Icons.fitness_center;
+        return Icons.fitness_center_rounded;
       case ActivityMode.gymCardio:
-        return Icons.directions_run;
+        return Icons.directions_run_rounded;
       case ActivityMode.sleeping:
-        return Icons.bedtime;
+        return Icons.bedtime_rounded;
     }
   }
 }

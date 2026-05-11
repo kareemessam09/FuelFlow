@@ -35,7 +35,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         title: const Text('ANALYTICS'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
         ),
         actions: [
           PopupMenuButton<String>(
@@ -77,7 +83,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               description: 'Crunching your energy and meal trends.',
             );
           }
-          
+
           if (state is AnalyticsError) {
             return Center(
               child: Column(
@@ -97,27 +103,28 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     state.message,
-                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
-                  BrutalButton(
-                    onPressed: _loadData,
-                    label: 'RETRY',
-                  ),
+                  BrutalButton(onPressed: _loadData, label: 'RETRY'),
                 ],
               ),
             );
           }
-          
+
           if (state is! AnalyticsLoaded) {
             return const StateFeedback(
               icon: Icons.analytics_outlined,
               title: 'No analytics yet',
-              description: 'Log meals and activity to unlock actionable insights.',
+              description:
+                  'Log meals and activity to unlock actionable insights.',
             );
           }
-          
+
           return RefreshIndicator(
             onRefresh: () async {
               context.read<AnalyticsBloc>().add(AnalyticsRefresh());
@@ -132,15 +139,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   // Energy Overview
                   _buildEnergyOverviewCard(state),
                   const SizedBox(height: 16),
-                  
+
                   // Activity Breakdown
                   _buildActivityBreakdownCard(state),
                   const SizedBox(height: 16),
-                  
+
                   // Meal Stats
                   _buildMealStatsCard(state),
                   const SizedBox(height: 16),
-                  
+
                   // Goals Progress
                   _buildGoalsCard(state),
                 ],
@@ -158,10 +165,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       return const StateFeedback(
         icon: Icons.insights_rounded,
         title: 'Energy overview unavailable',
-        description: 'Add more activity and meal logs to populate this section.',
+        description:
+            'Add more activity and meal logs to populate this section.',
       );
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -180,7 +188,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.battery_charging_full_rounded, color: Colors.white, size: 28),
+              const Icon(
+                Icons.battery_charging_full_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
               const SizedBox(width: 12),
               const Text(
                 'Energy Overview',
@@ -194,21 +206,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           Row(
             children: [
               Expanded(
                 child: _buildStatItem(
-                  'Avg Level', 
+                  'Avg Level',
                   '${report.avgEnergyLevel.toStringAsFixed(0)}%',
-                  Icons.trending_up_rounded
+                  Icons.trending_up_rounded,
                 ),
               ),
               Expanded(
                 child: _buildStatItem(
                   'Warning Time',
                   '${(report.timeInWarning / 60).toStringAsFixed(1)}h',
-                  Icons.warning_amber_rounded
+                  Icons.warning_amber_rounded,
                 ),
               ),
             ],
@@ -220,14 +232,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 child: _buildStatItem(
                   'Time Optimal',
                   '${(report.timeInOptimal / 60).toStringAsFixed(1)}h',
-                  Icons.check_circle_rounded
+                  Icons.check_circle_rounded,
                 ),
               ),
               Expanded(
                 child: _buildStatItem(
                   'Critical Time',
                   '${(report.timeInCritical / 60).toStringAsFixed(1)}h',
-                  Icons.local_fire_department_rounded
+                  Icons.local_fire_department_rounded,
                 ),
               ),
             ],
@@ -308,7 +320,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           ...activityStats.activityMinutes.entries.map((entry) {
             final activityName = entry.key;
             final hours = entry.value / 60.0;
@@ -323,16 +335,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Color _getColorForActivity(String activityName) {
     final lower = activityName.toLowerCase();
     if (lower.contains('rest')) return AppColors.modeResting;
-    if (lower.contains('cod') || lower.contains('focus')) return AppColors.modeCoding;
+    if (lower.contains('cod') || lower.contains('focus')) {
+      return AppColors.modeCoding;
+    }
     if (lower.contains('stud')) return AppColors.modeStudying;
-    if (lower.contains('gym') || lower.contains('strength')) return AppColors.modeGymStrength;
+    if (lower.contains('gym') || lower.contains('strength')) {
+      return AppColors.modeGymStrength;
+    }
     if (lower.contains('cardio')) return AppColors.modeGymCardio;
     return AppColors.primaryBlue;
   }
 
   Widget _buildActivityRow(String name, double hours, Color color) {
     final percentage = (hours / 14 * 100).toInt();
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -382,7 +398,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       return const StateFeedback(
         icon: Icons.restaurant_rounded,
         title: 'Meal stats unavailable',
-        description: 'Log meals consistently to get reliable nutrition patterns.',
+        description:
+            'Log meals consistently to get reliable nutrition patterns.',
       );
     }
 
@@ -406,7 +423,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           Row(
             children: [
               Expanded(
@@ -473,10 +490,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -514,20 +528,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           if (state.goals.isEmpty)
             Text(
               'No goals configured yet',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
             )
           else
             ...state.goals.asMap().entries.map((entry) {
               final goal = entry.value;
               return Padding(
-                padding: EdgeInsets.only(bottom: entry.key == state.goals.length - 1 ? 0 : 12),
+                padding: EdgeInsets.only(
+                  bottom: entry.key == state.goals.length - 1 ? 0 : 12,
+                ),
                 child: _buildGoalItem(
                   goal.activityType,
                   goal.progress.clamp(0, 1),
@@ -562,7 +575,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 fontFamily: 'RobotoMono',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: progress >= 1.0 ? AppColors.success : AppColors.secondary,
+                color: progress >= 1.0
+                    ? AppColors.success
+                    : AppColors.secondary,
               ),
             ),
           ],
@@ -582,10 +597,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.textTertiary,
-          ),
+          style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
         ),
       ],
     );
@@ -616,7 +628,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               (goal) => ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(goal.activityType),
-                                subtitle: Text('${goal.targetMinutes} min • ${goal.period}'),
+                                subtitle: Text(
+                                  '${goal.targetMinutes} min • ${goal.period}',
+                                ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -636,7 +650,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                           targetMinutes: edited.$2,
                                           period: edited.$3,
                                         );
-                                        final refreshed = await _goalsRepository.getGoals();
+                                        final refreshed = await _goalsRepository
+                                            .getGoals();
                                         goals
                                           ..clear()
                                           ..addAll(refreshed);
@@ -648,8 +663,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                       icon: const Icon(Icons.delete_rounded),
                                       color: AppColors.error,
                                       onPressed: () async {
-                                        await _goalsRepository.deleteGoal(id: goal.id);
-                                        goals.removeWhere((g) => g.id == goal.id);
+                                        await _goalsRepository.deleteGoal(
+                                          id: goal.id,
+                                        );
+                                        goals.removeWhere(
+                                          (g) => g.id == goal.id,
+                                        );
                                         setDialogState(() {});
                                         _loadData();
                                       },
@@ -696,9 +715,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to manage goals: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to manage goals: $e')));
     }
   }
 
@@ -759,10 +778,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     if (shouldSave != true) return null;
     final parsedTarget = int.tryParse(targetCtrl.text.trim());
-    if (activityCtrl.text.trim().isEmpty || parsedTarget == null || parsedTarget <= 0) {
+    if (activityCtrl.text.trim().isEmpty ||
+        parsedTarget == null ||
+        parsedTarget <= 0) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enter valid activity and target minutes')),
+          const SnackBar(
+            content: Text('Enter valid activity and target minutes'),
+          ),
         );
       }
       return null;

@@ -386,4 +386,12 @@ class AppTheme {
     color: AppColors.secondary,
     letterSpacing: -3,
   );
+
+  static const TextStyle sectionHeader = TextStyle(
+    fontFamily: 'SpaceGrotesk',
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textTertiary,
+    letterSpacing: 1.5,
+  );
 }
