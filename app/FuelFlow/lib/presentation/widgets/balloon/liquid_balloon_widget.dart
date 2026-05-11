@@ -25,7 +25,9 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
   late AnimationController _waveController;
   late AnimationController _fillController;
   late AnimationController _criticalPulseController;
+  late AnimationController _glowController;
   late Animation<double> _criticalPulse;
+  late Animation<double> _glowAnimation;
 
   late Animation<double> _waveAnimation;
   late Animation<double> _fillAnimation;
@@ -42,16 +44,17 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
     )..repeat();
     _waveAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_waveController);
 
+    // Longer fill duration for smoother energy transitions
     _fillController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: AppConstants.balloonAnimationDurationMs),
+      duration: const Duration(milliseconds: 1200),
     );
     _fillAnimation = Tween<double>(
       begin: _previousFill,
       end: widget.fillPercentage,
     ).animate(CurvedAnimation(
       parent: _fillController,
-      curve: Curves.easeOutCubic,
+      curve: Curves.easeInOutCubic,
     ));
 
     _criticalPulseController = AnimationController(
@@ -65,6 +68,14 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
       ),
     );
 
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+    _glowAnimation = Tween<double>(begin: 0.3, end: 0.7).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+
     _fillController.forward();
   }
 
@@ -74,12 +85,17 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
 
     if (oldWidget.fillPercentage != widget.fillPercentage) {
       _previousFill = _fillAnimation.value;
+      final delta = (widget.fillPercentage - _previousFill).abs();
+      // Scale duration proportionally to the change magnitude
+      final ms = (600 + delta * 12).clamp(600, 1800).toInt();
+      _fillController.duration = Duration(milliseconds: ms);
+
       _fillAnimation = Tween<double>(
         begin: _previousFill,
         end: widget.fillPercentage,
       ).animate(CurvedAnimation(
         parent: _fillController,
-        curve: Curves.easeOutCubic,
+        curve: Curves.easeInOutCubic,
       ));
       _fillController.forward(from: 0);
     }
@@ -90,6 +106,7 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
     _waveController.dispose();
     _fillController.dispose();
     _criticalPulseController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -110,6 +127,7 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
         _waveAnimation,
         _fillAnimation,
         _criticalPulse,
+        _glowAnimation,
       ]),
       builder: (context, child) {
         final currentFill = _fillAnimation.value.clamp(0.0, 100.0);
@@ -117,13 +135,14 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
         final strobeValue = isCritical ? _criticalPulse.value : 0.0;
         final invert = isCritical && strobeValue >= 0.5;
 
+        final fuelColor = AppColors.getFuelColor(currentFill);
         final backgroundColor = invert ? Colors.white : AppColors.surface;
         final liquidColor = isCritical
             ? (invert ? Colors.black : Colors.white)
-            : AppColors.getFuelColor(currentFill);
+            : fuelColor;
         final outlineColor = isCritical
             ? (invert ? Colors.black : Colors.white)
-            : AppColors.border;
+            : fuelColor.withValues(alpha: 0.4 + _glowAnimation.value * 0.3);
         final textColor = invert ? Colors.black : AppColors.textPrimary;
         final shockColor = isCritical
             ? (invert ? Colors.black.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.22))
@@ -137,6 +156,24 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
             child: Stack(
               alignment: Alignment.center,
               children: [
+                // Ambient glow halo (pulsing softly with fuel color)
+                if (!isCritical)
+                  Container(
+                    width: widget.size - 4,
+                    height: widget.size - 4,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: fuelColor.withValues(
+                            alpha: 0.08 + _glowAnimation.value * 0.12,
+                          ),
+                          blurRadius: 24 + _glowAnimation.value * 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
                 if (isCritical)
                   Container(
                     width: widget.size - 2,
@@ -163,7 +200,6 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
                     ),
                     child: Stack(
                       children: [
-                        // Isolated repaint boundary for the continuous 60fps wave
                         RepaintBoundary(
                           child: CustomPaint(
                             size: Size(widget.size - 20, widget.size - 20),
@@ -179,7 +215,7 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
                   ),
                 ),
 
-                // Subtle outer ring
+                // Outer ring tinted with fuel color
                 CustomPaint(
                   size: Size(widget.size - 16, widget.size - 16),
                   painter: BalloonOutlinePainter(
@@ -188,7 +224,7 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
                   ),
                 ),
 
-                // Absolute-centered numeric percentage
+                // Centered numeric percentage
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -205,7 +241,7 @@ class _LiquidBalloonWidgetState extends State<LiquidBalloonWidget>
                         fontFamily: 'SpaceGrotesk',
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: textColor,
+                        color: textColor.withValues(alpha: 0.7),
                       ),
                     ),
                   ],

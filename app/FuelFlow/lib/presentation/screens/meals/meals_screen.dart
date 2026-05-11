@@ -82,17 +82,13 @@ class _MealsScreenState extends State<MealsScreen>
     return BlocBuilder<MealsBloc, MealsState>(
       builder: (context, state) {
         if (state is MealsLoading) {
-          return const StateFeedback(
-            icon: Icons.restaurant_menu_rounded,
-            title: 'Loading today\'s meals',
-            description: 'We\'re preparing your latest meal timeline.',
-          );
+          return const SkeletonList(itemCount: 4);
         } else if (state is MealsLoaded && state.isTodayOnly) {
-          return _buildMealList(state.meals);
+          return _buildMealList(state.meals, isToday: true);
         } else if (state is MealsError) {
           return _buildError(state.message, true);
         }
-        return _buildMealList([]);
+        return _buildMealList([], isToday: true);
       },
     );
   }
@@ -101,66 +97,42 @@ class _MealsScreenState extends State<MealsScreen>
     return BlocBuilder<MealsBloc, MealsState>(
       builder: (context, state) {
         if (state is MealsLoading) {
-          return const StateFeedback(
-            icon: Icons.history_rounded,
-            title: 'Loading meal history',
-            description: 'Fetching your complete meal log.',
-          );
+          return const SkeletonList(itemCount: 6);
         } else if (state is MealsLoaded && !state.isTodayOnly) {
-          return _buildMealList(state.meals);
+          return _buildMealList(state.meals, isToday: false);
         } else if (state is MealsError) {
           return _buildError(state.message, false);
         }
-        return _buildMealList([]);
+        return _buildMealList([], isToday: false);
       },
     );
   }
 
   Widget _buildError(String message, bool isToday) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: AppColors.primary),
-          const SizedBox(height: 16),
-          Text(
-            'Error loading meals',
-            style: TextStyle(
-              fontFamily: 'SpaceGrotesk',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          BrutalButton(
-            onPressed: () {
-              if (isToday) {
-                context.read<MealsBloc>().add(MealsLoadToday());
-              } else {
-                context.read<MealsBloc>().add(MealsLoadHistory());
-              }
-            },
-            label: 'RETRY',
-          ),
-        ],
-      ),
+    return StateFeedback(
+      icon: Icons.error_outline_rounded,
+      title: 'Couldn\'t load meals',
+      description: message,
+      actionLabel: 'RETRY',
+      onAction: () {
+        if (isToday) {
+          context.read<MealsBloc>().add(MealsLoadToday());
+        } else {
+          context.read<MealsBloc>().add(MealsLoadHistory());
+        }
+      },
     );
   }
 
-  Widget _buildMealList(List<MealLog> meals) {
+  Widget _buildMealList(List<MealLog> meals, {bool isToday = false}) {
     if (meals.isEmpty) {
       return StateFeedback(
-        icon: Icons.restaurant_rounded,
-        title: 'No meals logged yet',
-        description: 'Start by adding your first meal to see trends.',
-        actionLabel: 'ADD FIRST MEAL',
+        icon: isToday ? Icons.wb_sunny_rounded : Icons.restaurant_rounded,
+        title: isToday ? 'No meals today' : 'No meals logged yet',
+        description: isToday
+            ? 'Snap a photo of your next meal to start tracking.'
+            : 'Your complete meal history will appear here.',
+        actionLabel: 'ADD MEAL',
         onAction: () => context.push('/meal-capture'),
       );
     }

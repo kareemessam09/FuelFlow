@@ -82,11 +82,7 @@ class _MedicationsScreenState extends State<MedicationsScreen>
         },
         builder: (context, state) {
           if (state is MedicationLoading) {
-            return const StateFeedback(
-              icon: Icons.medication_rounded,
-              title: 'Loading medications',
-              description: 'Fetching your medication plan and today logs.',
-            );
+            return const SkeletonList(itemCount: 4);
           }
 
           if (state is MedicationLoaded) {
@@ -363,142 +359,191 @@ class _MedicationsScreenState extends State<MedicationsScreen>
     String timing = existing?.timing ?? 'before';
     String mealType = existing?.mealType ?? 'any';
     bool reminderEnabled = existing?.reminderEnabled ?? true;
+    final formKey = GlobalKey<FormState>();
 
-    showDialog<void>(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) {
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              title: Text(
-                existing == null ? 'Add Medication' : 'Edit Medication',
+          builder: (sheetContext, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: const InputDecoration(labelText: 'Name'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: dosageController,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: const InputDecoration(
-                        labelText: 'Dosage (optional)',
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.border,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      initialValue: timing,
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'before',
-                          child: Text('Before meal'),
+                      Text(
+                        existing == null ? 'Add Medication' : 'Edit Medication',
+                        style: const TextStyle(
+                          fontFamily: 'SpaceGrotesk',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
                         ),
-                        DropdownMenuItem(
-                          value: 'after',
-                          child: Text('After meal'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setDialogState(() => timing = value);
-                      },
-                      decoration: const InputDecoration(labelText: 'Timing'),
-                    ),
-                    const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      initialValue: mealType,
-                      items: const [
-                        DropdownMenuItem(value: 'any', child: Text('Any meal')),
-                        DropdownMenuItem(
-                          value: 'breakfast',
-                          child: Text('Breakfast'),
-                        ),
-                        DropdownMenuItem(value: 'lunch', child: Text('Lunch')),
-                        DropdownMenuItem(
-                          value: 'dinner',
-                          child: Text('Dinner'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setDialogState(() => mealType = value);
-                      },
-                      decoration: const InputDecoration(labelText: 'Meal type'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: notesController,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: const InputDecoration(
-                        labelText: 'Notes (optional)',
                       ),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 10),
-                    SwitchListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      value: reminderEnabled,
-                      onChanged: (value) {
-                        setDialogState(() => reminderEnabled = value);
-                      },
-                      title: const Text('Enable reminders'),
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: nameController,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: const InputDecoration(
+                          labelText: 'Medication name',
+                          prefixIcon: Icon(Icons.medication_rounded),
+                        ),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Name is required'
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: dosageController,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: const InputDecoration(
+                          labelText: 'Dosage (optional)',
+                          hintText: 'e.g. 500mg',
+                          prefixIcon: Icon(Icons.scale_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      DropdownButtonFormField<String>(
+                        initialValue: timing,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'before',
+                            child: Text('Before meal'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'after',
+                            child: Text('After meal'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setSheetState(() => timing = value);
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Timing',
+                          prefixIcon: Icon(Icons.schedule_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      DropdownButtonFormField<String>(
+                        initialValue: mealType,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'any',
+                            child: Text('Any meal'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'breakfast',
+                            child: Text('Breakfast'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'lunch',
+                            child: Text('Lunch'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'dinner',
+                            child: Text('Dinner'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setSheetState(() => mealType = value);
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Meal type',
+                          prefixIcon: Icon(Icons.restaurant_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: notesController,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: const InputDecoration(
+                          labelText: 'Notes (optional)',
+                          prefixIcon: Icon(Icons.notes_rounded),
+                        ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        value: reminderEnabled,
+                        onChanged: (value) {
+                          setSheetState(() => reminderEnabled = value);
+                        },
+                        title: const Text('Enable reminders'),
+                      ),
+                      const SizedBox(height: 16),
+                      BrutalButton(
+                        label: existing == null ? 'Add Medication' : 'Save Changes',
+                        icon: existing == null ? Icons.add_rounded : Icons.check_rounded,
+                        height: 56,
+                        onPressed: () {
+                          if (!(formKey.currentState?.validate() ?? false)) return;
+                          final name = nameController.text.trim();
+                          final now = DateTime.now();
+
+                          final model = Medication(
+                            id: existing?.id ?? '0',
+                            userId: existing?.userId ?? '',
+                            name: name,
+                            timing: timing,
+                            mealType: mealType,
+                            dosage: dosageController.text.trim().isEmpty
+                                ? null
+                                : dosageController.text.trim(),
+                            notes: notesController.text.trim().isEmpty
+                                ? null
+                                : notesController.text.trim(),
+                            reminderEnabled: reminderEnabled,
+                            createdAt: existing?.createdAt ?? now,
+                            updatedAt: now,
+                          );
+
+                          if (existing == null) {
+                            context.read<MedicationBloc>().add(
+                              MedicationCreateRequested(model),
+                            );
+                          } else {
+                            context.read<MedicationBloc>().add(
+                              MedicationUpdateRequested(
+                                id: existing.id,
+                                medication: model,
+                              ),
+                            );
+                          }
+
+                          Navigator.of(sheetContext).pop();
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    final name = nameController.text.trim();
-                    if (name.isEmpty) return;
-                    final now = DateTime.now();
-
-                    final model = Medication(
-                      id: existing?.id ?? '0',
-                      userId: existing?.userId ?? '',
-                      name: name,
-                      timing: timing,
-                      mealType: mealType,
-                      dosage: dosageController.text.trim().isEmpty
-                          ? null
-                          : dosageController.text.trim(),
-                      notes: notesController.text.trim().isEmpty
-                          ? null
-                          : notesController.text.trim(),
-                      reminderEnabled: reminderEnabled,
-                      createdAt: existing?.createdAt ?? now,
-                      updatedAt: now,
-                    );
-
-                    if (existing == null) {
-                      context.read<MedicationBloc>().add(
-                        MedicationCreateRequested(model),
-                      );
-                    } else {
-                      context.read<MedicationBloc>().add(
-                        MedicationUpdateRequested(
-                          id: existing.id,
-                          medication: model,
-                        ),
-                      );
-                    }
-
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(existing == null ? 'Add' : 'Save'),
-                ),
-              ],
             );
           },
         );

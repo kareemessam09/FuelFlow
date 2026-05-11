@@ -263,52 +263,7 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
           }
 
           if (state.status == MealCaptureStatus.analyzing) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.accentGradient,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primaryBlue.withValues(alpha: 0.5),
-                          blurRadius: 40,
-                          spreadRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 64,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  const Text(
-                    'ANALYZING NUTRITION',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'SpaceGrotesk',
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.textPrimary,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Estimating nutrition profile…',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            );
+            return _ScanningOverlay(image: state.capturedImage);
           }
 
           if (state.status == MealCaptureStatus.error) {
@@ -445,70 +400,67 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Stats
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Fullness',
-                  '${result.estimatedFullnessPercentage.toInt()}%',
-                  Icons.pie_chart_rounded,
-                  AppColors.secondary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'GI',
-                  result.glycemicIndex.toStringAsFixed(1),
-                  Icons.speed_rounded,
-                  AppColors.accent,
-                ),
-              ),
-            ],
-          ),
-
-          if (result.estimatedSatietyMinutes > 0) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.timer_rounded, color: AppColors.primaryBlue),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Estimated Duration',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '~${result.estimatedSatietyMinutes} min at 1.0x',
-                          style: const TextStyle(
-                            fontFamily: 'RobotoMono',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
+          // Energy metrics card
+          GlassCard(
+            borderColor: AppColors.border,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'ENERGY METRICS',
+                  style: TextStyle(
+                    fontFamily: 'SpaceGrotesk',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textTertiary,
+                    letterSpacing: 1.5,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildMetricTile(
+                        icon: Icons.pie_chart_rounded,
+                        label: 'Fullness',
+                        value: '${result.estimatedFullnessPercentage.toInt()}%',
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 48,
+                      color: AppColors.border,
+                    ),
+                    Expanded(
+                      child: _buildMetricTile(
+                        icon: Icons.speed_rounded,
+                        label: 'GI',
+                        value: result.glycemicIndex.toStringAsFixed(1),
+                        color: AppColors.accent,
+                      ),
+                    ),
+                    if (result.estimatedSatietyMinutes > 0) ...[
+                      Container(
+                        width: 1,
+                        height: 48,
+                        color: AppColors.border,
+                      ),
+                      Expanded(
+                        child: _buildMetricTile(
+                          icon: Icons.timer_rounded,
+                          label: 'Duration',
+                          value: '${result.estimatedSatietyMinutes}m',
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
 
           const SizedBox(height: 32),
 
@@ -537,43 +489,271 @@ class _MealCaptureScreenState extends State<MealCaptureScreen> {
     );
   }
 
-  Widget _buildStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'RobotoMono',
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: color,
-            ),
+  Widget _buildMetricTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'RobotoMono',
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: color,
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Animated scanning overlay shown during AI analysis.
+class _ScanningOverlay extends StatefulWidget {
+  final File? image;
+  const _ScanningOverlay({this.image});
+
+  @override
+  State<_ScanningOverlay> createState() => _ScanningOverlayState();
+}
+
+class _ScanningOverlayState extends State<_ScanningOverlay>
+    with TickerProviderStateMixin {
+  late AnimationController _scanController;
+  late AnimationController _pulseController;
+  late Animation<double> _scanAnimation;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scanController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
+    _scanAnimation = Tween<double>(begin: -1.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scanController, curve: Curves.easeInOut),
+    );
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scanController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Image preview with scan line
+            if (widget.image != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: SizedBox(
+                  width: 220,
+                  height: 220,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.file(widget.image!, fit: BoxFit.cover),
+                      // Dark tinted overlay
+                      Container(
+                        color: AppColors.background.withValues(alpha: 0.55),
+                      ),
+                      // Scan line
+                      AnimatedBuilder(
+                        animation: _scanAnimation,
+                        builder: (context, child) {
+                          return Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Align(
+                              alignment: Alignment(0, _scanAnimation.value),
+                              child: Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      AppColors.primaryBlue,
+                                      AppColors.primaryBlue,
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primaryBlue.withValues(alpha: 0.6),
+                                      blurRadius: 16,
+                                      spreadRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      // Corner brackets
+                      ..._buildCornerBrackets(),
+                    ],
+                  ),
+                ),
+              )
+            else
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, _) {
+                  return Transform.scale(
+                    scale: _pulseAnimation.value,
+                    child: Container(
+                      padding: const EdgeInsets.all(28),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.accentGradient,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryBlue.withValues(alpha: 0.4),
+                            blurRadius: 32,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 56,
+                        color: Colors.white,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            const SizedBox(height: 36),
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, _) {
+                return Opacity(
+                  opacity: _pulseAnimation.value,
+                  child: const Text(
+                    'ANALYZING NUTRITION',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'SpaceGrotesk',
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.textPrimary,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Estimating nutrition profile...',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: 200,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  backgroundColor: AppColors.surfaceElevated,
+                  valueColor: const AlwaysStoppedAnimation(AppColors.primaryBlue),
+                  minHeight: 3,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  List<Widget> _buildCornerBrackets() {
+    const size = 24.0;
+    const thickness = 2.5;
+    const color = AppColors.primaryBlue;
+    const offset = 8.0;
+
+    Widget bracket(Alignment alignment, {bool flipH = false, bool flipV = false}) {
+      return Positioned(
+        top: alignment == Alignment.topLeft || alignment == Alignment.topRight ? offset : null,
+        bottom: alignment == Alignment.bottomLeft || alignment == Alignment.bottomRight ? offset : null,
+        left: alignment == Alignment.topLeft || alignment == Alignment.bottomLeft ? offset : null,
+        right: alignment == Alignment.topRight || alignment == Alignment.bottomRight ? offset : null,
+        child: Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.diagonal3Values(
+            flipH ? -1.0 : 1.0,
+            flipV ? -1.0 : 1.0,
+            1.0,
+          ),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: CustomPaint(painter: _BracketPainter(color: color, strokeWidth: thickness)),
+          ),
+        ),
+      );
+    }
+
+    return [
+      bracket(Alignment.topLeft),
+      bracket(Alignment.topRight, flipH: true),
+      bracket(Alignment.bottomLeft, flipV: true),
+      bracket(Alignment.bottomRight, flipH: true, flipV: true),
+    ];
+  }
+}
+
+class _BracketPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  _BracketPainter({required this.color, required this.strokeWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(0, size.height * 0.4), Offset.zero, paint);
+    canvas.drawLine(Offset.zero, Offset(size.width * 0.4, 0), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BracketPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
 }
